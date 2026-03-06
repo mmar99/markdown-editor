@@ -1,0 +1,56 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+/* ---- Base Styles (using design tokens) ---- */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-regular);
+  font-size: var(--font-size-regular);
+  font-weight: var(--font-weight-normal);
+  letter-spacing: var(--editor-letter-spacing);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-quaternary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}
+
+/* Selection */
+::selection {
+  background-color: var(--color-brand);
+  color: white;
+}
+
+/* Focus */
+*:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 0px;
+}

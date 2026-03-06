@@ -1,0 +1,150 @@
+/* ============================================================
+   DESIGN TOKENS — Extracted from Linear, adapted for Markdown
+   Reference: /Users/aymardumoulin/Projects/Markdown Project/markdown-design-tokens.md
+   ============================================================ */
+
+:root {
+  /* ========== TYPOGRAPHY ========== */
+  --font-regular: "Inter Variable", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-regular);
+  --font-monospace: "Berkeley Mono", "SFMono Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+
+  /* Font sizes (semantic scale) */
+  --font-size-title1: 2.25rem;    /* 36px */
+  --font-size-title2: 1.5rem;     /* 24px */
+  --font-size-title3: 1.25rem;    /* 20px */
+  --font-size-large: 1.125rem;    /* 18px */
+  --font-size-regular: 0.9375rem; /* 15px */
+  --font-size-small: 0.8125rem;   /* 13px */
+  --font-size-mini: 0.75rem;      /* 12px */
+  --font-size-micro: 0.6875rem;   /* 11px */
+
+  /* Font weights */
+  --font-weight-light: 300;
+  --font-weight-normal: 450;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Editor typography */
+  --editor-font-size: 0.9375rem;  /* 15px */
+  --editor-line-height: 1.6;
+  --editor-letter-spacing: -0.00666667em;
+
+  /* ========== COLORS — LIGHT THEME ========== */
+
+  /* Text hierarchy */
+  --color-text-primary: #1b1b1b;
+  --color-text-secondary: #2f2f31;
+  --color-text-tertiary: #5b5c5d;
+  --color-text-quaternary: #9b9b9d;
+
+  /* Background hierarchy */
+  --color-bg-primary: #fcfcfc;
+  --color-bg-secondary: #ededed;
+  --color-bg-tertiary: #e6e6e6;
+  --color-bg-quaternary: #f8f8f8;
+  --color-bg-sidebar: #f5f5f5;
+
+  /* Borders */
+  --color-border-primary: #eeeeee;
+  --color-border-secondary: #dcdcdc;
+  --color-border-tertiary: #cfcfcf;
+
+  /* Brand (Indigo) */
+  --color-brand: #5e6ad2;
+  --color-brand-hover: #4f5dc4;
+  --color-brand-active: #4353b8;
+  --color-brand-light: #e9edf7;
+
+  /* Content */
+  --content-color: #b0b5c0;
+  --content-highlight-color: #23252a;
+
+  /* Status */
+  --color-success: #43bc58;
+  --color-success-bg: #d5ffd6;
+  --color-error: #e03c44;
+  --color-error-bg: #f4eaeb;
+  --color-warning: #f0bf00;
+  --color-warning-bg: #ffeac6;
+  --color-info: #21b3ff;
+  --color-info-bg: #dbffff;
+
+  /* Interactive surfaces */
+  --color-hover: #00000007;       /* 3% black */
+  --color-active: #0000000f;      /* 6% black */
+  --color-selected-bg: #e9edf7;   /* Brand light */
+  --color-code-bg: #f7f7f7;
+
+  /* ========== SPACING ========== */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* Editor spacing */
+  --editor-block-spacing: 1rem;
+  --editor-block-spacing-small: 6px;
+  --editor-block-spacing-large: 22px;
+  --editor-safe-area: 16px;
+  --editor-list-inset: 1.5rem;
+
+  /* ========== BORDERS & RADIUS ========== */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 9999px;
+  --radius-circle: 50%;
+  --border-standard: 1px solid var(--color-border-secondary);
+  --border-hairline: 0.5px solid var(--color-border-primary);
+
+  /* ========== SHADOWS (5 levels) ========== */
+  --shadow-xs: 0px 3px 6px -2px #00000005, 0px 1px 1px #0000000b;
+  --shadow-sm: 0px 4px 4px -1px #00000005, 0px 1px 1px 0px #00000010;
+  --shadow-md: 0 6px 18px #00000005, 0 3px 9px #0000000b, 0 1px 1px #0000000b;
+  --shadow-lg: 0px 9px 17px #00000023;
+  --shadow-xl: 0 9px 48px #00000016, 0 6px 24px #0000001c, 0 1px 1px #0000000b;
+
+  /* ========== MOTION ========== */
+  --ease-out-cubic: cubic-bezier(.215, .61, .355, 1);
+  --ease-out-quart: cubic-bezier(.165, .84, .44, 1);
+  --ease-in-out-cubic: cubic-bezier(.645, .045, .355, 1);
+  --ease-out-expo: cubic-bezier(.19, 1, .22, 1);
+
+  --speed-quick: 0.1s;
+  --speed-regular: 0.25s;
+  --speed-slow: 0.35s;
+
+  /* ========== FOCUS ========== */
+  --focus-ring-color: #5a7bd5;
+  --focus-ring: 1px solid var(--focus-ring-color);
+}
+
+/* ========== DARK THEME ========== */
+.dark {
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #b0b5c0;
+  --color-text-tertiary: #6b6f76;
+  --color-text-quaternary: #5b5c5d;
+
+  --color-bg-primary: #101012;
+  --color-bg-secondary: #1a1a1c;
+  --color-bg-tertiary: #23252a;
+  --color-bg-quaternary: #151517;
+  --color-bg-sidebar: #090909;
+
+  --color-border-primary: #23252a;
+  --color-border-secondary: #2e2f30;
+  --color-border-tertiary: #3a3b3d;
+
+  --content-color: #6b6f76;
+  --content-highlight-color: #ffffff;
+
+  --color-hover: #ffffff07;
+  --color-active: #ffffff0f;
+  --color-selected-bg: #1e2a4a;
+  --color-code-bg: #1a1a1c;
+}

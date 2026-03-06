@@ -1,0 +1,195 @@
+import { useAppState, useAppDispatch } from "../../stores/AppContext";
+import { useTheme } from "../../hooks/useTheme";
+
+const FONT_OPTIONS = [
+  { value: "system", label: "System Default" },
+  { value: "'Inter Variable', sans-serif", label: "Inter" },
+  { value: "'Georgia', serif", label: "Georgia" },
+  { value: "'SF Mono', monospace", label: "SF Mono" },
+  { value: "'Merriweather', serif", label: "Merriweather" },
+];
+
+const FONT_SIZES = [13, 14, 15, 16, 18, 20];
+
+const EDITOR_WIDTHS = [
+  { value: 650, label: "Narrow" },
+  { value: 800, label: "Default" },
+  { value: 960, label: "Wide" },
+  { value: 1200, label: "Full" },
+];
+
+const BG_COLORS = [
+  { value: "default", label: "Default" },
+  { value: "#fffdf7", label: "Warm" },
+  { value: "#f7fdf9", label: "Green" },
+  { value: "#f5f5ff", label: "Lavender" },
+  { value: "#fff8f0", label: "Peach" },
+];
+
+export function SettingsPanel() {
+  const { settingsOpen, settings } = useAppState();
+  const dispatch = useAppDispatch();
+  const { resolved, toggleTheme } = useTheme();
+
+  if (!settingsOpen) return null;
+
+  const update = (partial: Partial<typeof settings>) => {
+    dispatch({ type: "UPDATE_SETTINGS", settings: partial });
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: "280px",
+        zIndex: 200,
+        backgroundColor: "var(--color-bg-sidebar)",
+        borderLeft: "1px solid var(--color-border-primary)",
+        paddingTop: "52px",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: "var(--shadow-lg)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "var(--spacing-sm) var(--spacing-md)",
+          borderBottom: "1px solid var(--color-border-primary)",
+        }}
+      >
+        <span style={{ fontWeight: "var(--font-weight-semibold)" as unknown as number, fontSize: "var(--font-size-small)" }}>
+          Settings
+        </span>
+        <button
+          onClick={() => dispatch({ type: "TOGGLE_SETTINGS" })}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontSize: "16px",
+            color: "var(--color-text-tertiary)",
+            padding: "2px 6px",
+            borderRadius: "var(--radius-sm)",
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+      <div style={{ flex: 1, overflow: "auto", padding: "var(--spacing-md)" }}>
+        <Group label="Theme">
+          <div style={{ display: "flex", gap: "var(--spacing-xs)" }}>
+            <Chip active={resolved === "light"} onClick={() => { if (resolved !== "light") toggleTheme(); }}>Light</Chip>
+            <Chip active={resolved === "dark"} onClick={() => { if (resolved !== "dark") toggleTheme(); }}>Dark</Chip>
+          </div>
+        </Group>
+
+        <Group label="Font">
+          <select value={settings.fontFamily} onChange={(e) => update({ fontFamily: e.target.value })} style={selectStyle}>
+            {FONT_OPTIONS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+          </select>
+        </Group>
+
+        <Group label="Font Size">
+          <div style={{ display: "flex", gap: "var(--spacing-xs)", flexWrap: "wrap" }}>
+            {FONT_SIZES.map((size) => (
+              <Chip key={size} active={settings.fontSize === size} onClick={() => update({ fontSize: size })}>
+                {size}
+              </Chip>
+            ))}
+          </div>
+        </Group>
+
+        <Group label="Editor Width">
+          <div style={{ display: "flex", gap: "var(--spacing-xs)", flexWrap: "wrap" }}>
+            {EDITOR_WIDTHS.map((w) => (
+              <Chip key={w.value} active={settings.editorWidth === w.value} onClick={() => update({ editorWidth: w.value })}>
+                {w.label}
+              </Chip>
+            ))}
+          </div>
+        </Group>
+
+        <Group label="Background">
+          <div style={{ display: "flex", gap: "var(--spacing-sm)", flexWrap: "wrap" }}>
+            {BG_COLORS.map((bg) => (
+              <button
+                key={bg.value}
+                onClick={() => update({ bgColor: bg.value })}
+                title={bg.label}
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "var(--radius-md)",
+                  border: settings.bgColor === bg.value
+                    ? `2px solid var(--color-brand)`
+                    : `1px solid var(--color-border-secondary)`,
+                  background: bg.value === "default" ? "var(--color-bg-primary)" : bg.value,
+                  cursor: "pointer",
+                }}
+              />
+            ))}
+          </div>
+        </Group>
+      </div>
+    </div>
+  );
+}
+
+function Group({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: "var(--spacing-lg)" }}>
+      <label style={{
+        display: "block",
+        fontSize: "var(--font-size-micro)",
+        fontWeight: "var(--font-weight-semibold)" as unknown as number,
+        color: "var(--color-text-quaternary)",
+        textTransform: "uppercase",
+        letterSpacing: "0.05em",
+        marginBottom: "var(--spacing-sm)",
+      }}>
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function Chip({ children, active, onClick }: { children: React.ReactNode; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: "var(--spacing-xs) var(--spacing-sm)",
+        borderRadius: "var(--radius-md)",
+        border: `1px solid ${active ? "var(--color-brand)" : "var(--color-border-secondary)"}`,
+        background: active ? "var(--color-brand)" : "var(--color-bg-primary)",
+        color: active ? "white" : "var(--color-text-primary)",
+        cursor: "pointer",
+        fontSize: "var(--font-size-micro)",
+        fontWeight: active ? "var(--font-weight-medium)" as unknown as number : "var(--font-weight-normal)" as unknown as number,
+        transition: `all var(--speed-quick) var(--ease-out-cubic)`,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+const selectStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "6px 10px",
+  borderRadius: "var(--radius-md)",
+  border: "1px solid var(--color-border-secondary)",
+  backgroundColor: "var(--color-bg-primary)",
+  color: "var(--color-text-primary)",
+  fontSize: "var(--font-size-small)",
+  cursor: "pointer",
+  outline: "none",
+};
