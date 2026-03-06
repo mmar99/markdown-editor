@@ -17,7 +17,6 @@ import { OutlinePanel } from "./components/Sidebar/OutlinePanel";
 import { WelcomeScreen } from "./components/WelcomeScreen/WelcomeScreen";
 import { SettingsPanel } from "./components/Settings/SettingsPanel";
 import { CommandPalette } from "./components/CommandPalette/CommandPalette";
-import { useTheme } from "./hooks/useTheme";
 import "./components/Editor/editor.css";
 
 let hasContent = false;
@@ -27,8 +26,6 @@ function App() {
   const dispatch = useAppDispatch();
   const { openFile, saveFile, saveFileAs, openFileByPath } = useFileSystem();
   const { loadRecentFiles, addRecentFile } = useRecentFiles();
-
-  const { toggleTheme } = useTheme();
 
   useSession();
   useFileOpen();
@@ -466,14 +463,6 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
         onOpenFile={(path) => {
           openFileByPath(path).then((ok) => { if (ok) addRecentFile(path); });
         }}
-        onToggleSidebar={() => dispatch({ type: "TOGGLE_SIDEBAR" })}
-        onToggleOutline={() => dispatch({ type: "TOGGLE_OUTLINE" })}
-        onToggleSettings={() => dispatch({ type: "TOGGLE_SETTINGS" })}
-        onNewFile={() => { dispatch({ type: "NEW_FILE" }); editor?.commands.setContent("", { contentType: "markdown" }); hasContent = true; }}
-        onOpenFileDialog={() => { openFile().then((path) => { if (path) { addRecentFile(path); hasContent = true; } }); }}
-        onExport={handleExport}
-        onPrint={handlePrint}
-        onToggleTheme={toggleTheme}
         fileTree={state.fileTree}
         recentFiles={state.recentFiles}
         favorites={state.favorites}

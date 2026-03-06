@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useCallback, useRef } from "react";
+// cmdk handles fuzzy filtering automatically
 import {
   Command,
   CommandEmpty,
@@ -6,7 +7,6 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
 } from "cmdk";
 import type { FileNode } from "../../types";
 import { flattenFileTree } from "../../utils/flattenFileTree";
@@ -16,14 +16,6 @@ interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
   onOpenFile: (path: string) => void;
-  onToggleSidebar: () => void;
-  onToggleOutline: () => void;
-  onToggleSettings: () => void;
-  onNewFile: () => void;
-  onOpenFileDialog: () => void;
-  onExport: (format: "pdf" | "html") => void;
-  onPrint: () => void;
-  onToggleTheme: () => void;
   fileTree: FileNode[];
   recentFiles: string[];
   favorites: string[];
@@ -50,29 +42,15 @@ export function CommandPalette({
   open,
   onClose,
   onOpenFile,
-  onToggleSidebar,
-  onToggleOutline,
-  onToggleSettings,
-  onNewFile,
-  onOpenFileDialog,
-  onExport,
-  onPrint,
-  onToggleTheme,
   fileTree,
   recentFiles,
   favorites,
   workspacePath,
 }: CommandPaletteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const searchRef = useRef("");
 
   // Flatten file tree into searchable list
   const allFiles = useMemo(() => flattenFileTree(fileTree), [fileTree]);
-
-  // Track the current search value for conditional rendering
-  const handleValueChange = useCallback((value: string) => {
-    searchRef.current = value;
-  }, []);
 
   // When a file is selected
   const handleFileSelect = useCallback(
@@ -83,59 +61,27 @@ export function CommandPalette({
     [onOpenFile, onClose]
   );
 
-  // When a command is selected
-  const handleCommand = useCallback(
-    (command: string) => {
-      switch (command) {
-        case "toggle-sidebar":
-          onToggleSidebar();
-          break;
-        case "toggle-outline":
-          onToggleOutline();
-          break;
-        case "toggle-settings":
-          onToggleSettings();
-          break;
-        case "new-file":
-          onNewFile();
-          break;
-        case "open-file":
-          onOpenFileDialog();
-          break;
-        case "export-pdf":
-          onExport("pdf");
-          break;
-        case "export-html":
-          onExport("html");
-          break;
-        case "print":
-          onPrint();
-          break;
-        case "toggle-theme":
-          onToggleTheme();
-          break;
-      }
-      onClose();
-    },
-    [
-      onClose,
-      onToggleSidebar,
-      onToggleOutline,
-      onToggleSettings,
-      onNewFile,
-      onOpenFileDialog,
-      onExport,
-      onPrint,
-      onToggleTheme,
-    ]
-  );
-
   // Focus input when opened
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 10);
     }
   }, [open]);
+
+  // Capture Escape before macOS full-screen handler intercepts it
+  useEffect(() => {
+    if (!open) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    // "capture: true" means this runs BEFORE other handlers (including macOS full-screen)
+    document.addEventListener("keydown", handleEscape, true);
+    return () => document.removeEventListener("keydown", handleEscape, true);
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -148,9 +94,8 @@ export function CommandPalette({
         <Command className="command-palette" loop>
           <CommandInput
             ref={inputRef}
-            placeholder="Search files or type > for commands..."
+            placeholder="Search files..."
             className="command-palette-input"
-            onValueChange={handleValueChange}
           />
           <CommandList className="command-palette-list">
             <CommandEmpty className="command-palette-empty">
@@ -244,160 +189,20 @@ export function CommandPalette({
               </CommandGroup>
             )}
 
-            <CommandSeparator className="command-palette-separator" />
-
-            {/* Commands */}
-            <CommandGroup heading="Commands" className="command-palette-group">
-              <CommandItem
-                value="Toggle Sidebar"
-                onSelect={() => handleCommand("toggle-sidebar")}
-                className="command-palette-item"
-              >
-                <span className="command-palette-item-icon">
-                  <CommandIcon />
-                </span>
-                <div className="command-palette-item-content">
-                  <span className="command-palette-item-name">
-                    Toggle Sidebar
-                  </span>
-                </div>
-                <kbd className="command-palette-shortcut">
-                  <span>Cmd</span>
-                  <span>\</span>
-                </kbd>
-              </CommandItem>
-
-              <CommandItem
-                value="Toggle Outline"
-                onSelect={() => handleCommand("toggle-outline")}
-                className="command-palette-item"
-              >
-                <span className="command-palette-item-icon">
-                  <CommandIcon />
-                </span>
-                <div className="command-palette-item-content">
-                  <span className="command-palette-item-name">
-                    Toggle Outline
-                  </span>
-                </div>
-              </CommandItem>
-
-              <CommandItem
-                value="Toggle Dark Mode"
-                onSelect={() => handleCommand("toggle-theme")}
-                className="command-palette-item"
-              >
-                <span className="command-palette-item-icon">
-                  <CommandIcon />
-                </span>
-                <div className="command-palette-item-content">
-                  <span className="command-palette-item-name">
-                    Toggle Dark Mode
-                  </span>
-                </div>
-              </CommandItem>
-
-              <CommandItem
-                value="New File"
-                onSelect={() => handleCommand("new-file")}
-                className="command-palette-item"
-              >
-                <span className="command-palette-item-icon">
-                  <CommandIcon />
-                </span>
-                <div className="command-palette-item-content">
-                  <span className="command-palette-item-name">New File</span>
-                </div>
-                <kbd className="command-palette-shortcut">
-                  <span>Cmd</span>
-                  <span>N</span>
-                </kbd>
-              </CommandItem>
-
-              <CommandItem
-                value="Open File"
-                onSelect={() => handleCommand("open-file")}
-                className="command-palette-item"
-              >
-                <span className="command-palette-item-icon">
-                  <CommandIcon />
-                </span>
-                <div className="command-palette-item-content">
-                  <span className="command-palette-item-name">Open File</span>
-                </div>
-                <kbd className="command-palette-shortcut">
-                  <span>Cmd</span>
-                  <span>O</span>
-                </kbd>
-              </CommandItem>
-
-              <CommandItem
-                value="Open Settings"
-                onSelect={() => handleCommand("toggle-settings")}
-                className="command-palette-item"
-              >
-                <span className="command-palette-item-icon">
-                  <CommandIcon />
-                </span>
-                <div className="command-palette-item-content">
-                  <span className="command-palette-item-name">
-                    Open Settings
-                  </span>
-                </div>
-                <kbd className="command-palette-shortcut">
-                  <span>Cmd</span>
-                  <span>,</span>
-                </kbd>
-              </CommandItem>
-
-              <CommandItem
-                value="Export to PDF"
-                onSelect={() => handleCommand("export-pdf")}
-                className="command-palette-item"
-              >
-                <span className="command-palette-item-icon">
-                  <CommandIcon />
-                </span>
-                <div className="command-palette-item-content">
-                  <span className="command-palette-item-name">
-                    Export to PDF
-                  </span>
-                </div>
-              </CommandItem>
-
-              <CommandItem
-                value="Export to HTML"
-                onSelect={() => handleCommand("export-html")}
-                className="command-palette-item"
-              >
-                <span className="command-palette-item-icon">
-                  <CommandIcon />
-                </span>
-                <div className="command-palette-item-content">
-                  <span className="command-palette-item-name">
-                    Export to HTML
-                  </span>
-                </div>
-              </CommandItem>
-
-              <CommandItem
-                value="Print"
-                onSelect={() => handleCommand("print")}
-                className="command-palette-item"
-              >
-                <span className="command-palette-item-icon">
-                  <CommandIcon />
-                </span>
-                <div className="command-palette-item-content">
-                  <span className="command-palette-item-name">Print</span>
-                </div>
-                <kbd className="command-palette-shortcut">
-                  <span>Cmd</span>
-                  <span>P</span>
-                </kbd>
-              </CommandItem>
-            </CommandGroup>
           </CommandList>
+
+          {/* Footer bar — Slack-style hints */}
+          <div className="command-palette-footer">
+            <span className="command-palette-footer-hint">
+              <kbd>↑</kbd><kbd>↓</kbd> Select
+            </span>
+            <span className="command-palette-footer-hint">
+              <kbd>Enter</kbd> Open
+            </span>
+            <span className="command-palette-footer-hint">
+              <kbd>Esc</kbd> Close
+            </span>
+          </div>
         </Command>
       </div>
     </div>
@@ -438,19 +243,3 @@ function StarIcon() {
   );
 }
 
-function CommandIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M10 3l3 3-6 6H4v-3l6-6z" />
-    </svg>
-  );
-}
