@@ -26,6 +26,7 @@ export interface AppState {
   sidebarOpen: boolean;
   outlineOpen: boolean;
   settingsOpen: boolean;
+  commandPaletteOpen: boolean;
   // Workspace
   workspacePath: string | null;
   fileTree: FileNode[];

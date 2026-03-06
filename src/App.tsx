@@ -16,6 +16,8 @@ import { Sidebar } from "./components/Sidebar/Sidebar";
 import { OutlinePanel } from "./components/Sidebar/OutlinePanel";
 import { WelcomeScreen } from "./components/WelcomeScreen/WelcomeScreen";
 import { SettingsPanel } from "./components/Settings/SettingsPanel";
+import { CommandPalette } from "./components/CommandPalette/CommandPalette";
+import { useTheme } from "./hooks/useTheme";
 import "./components/Editor/editor.css";
 
 let hasContent = false;
@@ -25,6 +27,8 @@ function App() {
   const dispatch = useAppDispatch();
   const { openFile, saveFile, saveFileAs, openFileByPath } = useFileSystem();
   const { loadRecentFiles, addRecentFile } = useRecentFiles();
+
+  const { toggleTheme } = useTheme();
 
   useSession();
   useFileOpen();
@@ -283,6 +287,12 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
   // Keyboard shortcuts
   const handleKeyDown = useCallback(async (e: KeyboardEvent) => {
     if (!e.metaKey) return;
+    // Command palette
+    if (e.key === "k") {
+      e.preventDefault();
+      dispatch({ type: state.commandPaletteOpen ? "CLOSE_COMMAND_PALETTE" : "OPEN_COMMAND_PALETTE" });
+      return;
+    }
     switch (e.key) {
       case "o": {
         e.preventDefault();
@@ -332,7 +342,7 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
       }
       case "0": { e.preventDefault(); editor?.chain().focus().setParagraph().run(); break; }
     }
-  }, [editor, state.currentFilePath, state.currentContent, state.activeTabIndex, state.openTabs.length, dispatch, openFile, saveFile, saveFileAs, addRecentFile, refreshFile, handlePrint]);
+  }, [editor, state.currentFilePath, state.currentContent, state.activeTabIndex, state.openTabs.length, state.commandPaletteOpen, dispatch, openFile, saveFile, saveFileAs, addRecentFile, refreshFile, handlePrint]);
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);
@@ -448,6 +458,27 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
 
       {/* Settings overlay */}
       <SettingsPanel />
+
+      {/* Command palette overlay */}
+      <CommandPalette
+        open={state.commandPaletteOpen}
+        onClose={() => dispatch({ type: "CLOSE_COMMAND_PALETTE" })}
+        onOpenFile={(path) => {
+          openFileByPath(path).then((ok) => { if (ok) addRecentFile(path); });
+        }}
+        onToggleSidebar={() => dispatch({ type: "TOGGLE_SIDEBAR" })}
+        onToggleOutline={() => dispatch({ type: "TOGGLE_OUTLINE" })}
+        onToggleSettings={() => dispatch({ type: "TOGGLE_SETTINGS" })}
+        onNewFile={() => { dispatch({ type: "NEW_FILE" }); editor?.commands.setContent("", { contentType: "markdown" }); hasContent = true; }}
+        onOpenFileDialog={() => { openFile().then((path) => { if (path) { addRecentFile(path); hasContent = true; } }); }}
+        onExport={handleExport}
+        onPrint={handlePrint}
+        onToggleTheme={toggleTheme}
+        fileTree={state.fileTree}
+        recentFiles={state.recentFiles}
+        favorites={state.favorites}
+        workspacePath={state.workspacePath}
+      />
     </div>
   );
 }

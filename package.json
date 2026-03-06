@@ -39,6 +39,7 @@
     "@tiptap/react": "^3.20.0",
     "@tiptap/starter-kit": "^3.20.0",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "highlight.js": "^11.11.1",
     "lowlight": "^3.3.0",
     "react": "^19.1.0",

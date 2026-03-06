@@ -36,6 +36,7 @@ const initialState: AppState = {
   sidebarOpen: true,
   outlineOpen: true,
   settingsOpen: false,
+  commandPaletteOpen: false,
   workspacePath: null,
   fileTree: [],
   recentFiles: [],
@@ -59,7 +60,9 @@ type Action =
   | { type: "SET_FILE_TREE"; tree: FileNode[] }
   | { type: "SET_RECENT_FILES"; files: string[] }
   | { type: "UPDATE_SETTINGS"; settings: Partial<Settings> }
-  | { type: "RESTORE_SESSION"; workspacePath: string | null; settings: Settings; favorites: string[]; tabs: TabInfo[] };
+  | { type: "RESTORE_SESSION"; workspacePath: string | null; settings: Settings; favorites: string[]; tabs: TabInfo[] }
+  | { type: "OPEN_COMMAND_PALETTE" }
+  | { type: "CLOSE_COMMAND_PALETTE" };
 
 function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -167,6 +170,10 @@ function appReducer(state: AppState, action: Action): AppState {
         openTabs: action.tabs,
         activeTabIndex: action.tabs.length > 0 ? 0 : -1,
       };
+    case "OPEN_COMMAND_PALETTE":
+      return { ...state, commandPaletteOpen: true };
+    case "CLOSE_COMMAND_PALETTE":
+      return { ...state, commandPaletteOpen: false };
     default:
       return state;
   }
