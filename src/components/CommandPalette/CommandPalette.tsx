@@ -6,6 +6,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandLoading,
 } from "cmdk";
 import type { FileNode } from "../../types";
 import { flattenFileTree } from "../../utils/flattenFileTree";
@@ -204,7 +205,7 @@ export function CommandPalette({
             )}
             {/* Unified search: manual empty/loading states (cmdk can't track these) */}
             {isUnifiedSearch && isSearching && searchResults.length === 0 && (
-              <div className="command-palette-empty">Searching...</div>
+              <CommandLoading className="command-palette-empty">Searching...</CommandLoading>
             )}
             {isUnifiedSearch && !isSearching && searchResults.length === 0 && (
               <div className="command-palette-empty">No results found.</div>
@@ -221,7 +222,8 @@ export function CommandPalette({
                     {recentFiles.map((path) => (
                       <CommandItem
                         key={`recent-${path}`}
-                        value={`${fileName(path)} ${path}`}
+                        value={fileName(path)}
+                        keywords={[path]}
                         onSelect={() => handleFileSelect(path)}
                         className="command-palette-item"
                       >
@@ -247,7 +249,8 @@ export function CommandPalette({
                     {favorites.map((path) => (
                       <CommandItem
                         key={`fav-${path}`}
-                        value={`${fileName(path)} ${path}`}
+                        value={fileName(path)}
+                        keywords={[path]}
                         onSelect={() => handleFileSelect(path)}
                         className="command-palette-item"
                       >
@@ -273,7 +276,8 @@ export function CommandPalette({
                     {allFiles.map((node) => (
                       <CommandItem
                         key={`file-${node.path}`}
-                        value={`${node.name} ${node.path}`}
+                        value={node.name}
+                        keywords={[node.path]}
                         onSelect={() => handleFileSelect(node.path)}
                         className="command-palette-item"
                       >

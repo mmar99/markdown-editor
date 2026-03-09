@@ -53,9 +53,11 @@
 
 /* Results list */
 .command-palette-list {
+  height: var(--cmdk-list-height);
   max-height: 360px;
   overflow-y: auto;
   padding: var(--spacing-xs) 0;
+  transition: height var(--speed-quick) var(--ease-out-cubic);
 }
 
 /* Group heading */
