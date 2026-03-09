@@ -352,6 +352,26 @@
 }
 
 /* ============================================================
+   SEARCH FLASH — Temporary pulse on search-to-scroll
+   ============================================================ */
+
+.search-flash-highlight {
+  background-color: var(--color-warning-bg);
+  border-radius: 2px;
+  padding: 0.1em 0;
+  animation: search-flash 5s var(--ease-out-cubic) forwards;
+}
+
+@keyframes search-flash {
+  0%, 60% {
+    background-color: var(--color-warning-bg);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* ============================================================
    PLACEHOLDER
    ============================================================ */
 

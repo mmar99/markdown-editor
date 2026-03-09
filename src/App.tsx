@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { editorExtensions } from "./components/Editor/extensions";
@@ -27,6 +27,11 @@ function App() {
   const { openFile, saveFile, saveFileAs, openFileByPath } = useFileSystem();
   const { loadRecentFiles, addRecentFile } = useRecentFiles();
 
+  // Pending flash: set before openFileByPath, consumed after setContent loads new file
+  const pendingFlash = useRef<{ searchQuery: string; lineText?: string } | null>(null);
+  // Suppresses onUpdate during file load to prevent false isDirty
+  const suppressOnUpdate = useRef(false);
+
   useSession();
   useFileOpen();
 
@@ -35,6 +40,7 @@ function App() {
     content: "",
     contentType: "markdown",
     onUpdate: ({ editor }) => {
+      if (suppressOnUpdate.current) return;
       dispatch({ type: "UPDATE_CONTENT", content: editor.getMarkdown() });
     },
     editorProps: { attributes: { class: "editor-content-area" } },
@@ -50,7 +56,65 @@ function App() {
   useEffect(() => {
     if (!editor || state.fileVersion === 0) return;
     hasContent = true;
+    suppressOnUpdate.current = true;
     editor.commands.setContent(state.originalContent, { contentType: "markdown" });
+    suppressOnUpdate.current = false;
+    // Sync currentContent with originalContent — isDirty stays false
+    dispatch({ type: "UPDATE_CONTENT", content: state.originalContent });
+
+    // Fire pending flash after new content is loaded
+    const flash = pendingFlash.current;
+    if (flash) {
+      pendingFlash.current = null;
+      setTimeout(() => {
+        const docText = editor.state.doc.textContent;
+        const queryLower = flash.searchQuery.toLowerCase();
+
+        // Use lineText (stripped markdown line from Rust) to find the exact block.
+        // Strip leading/trailing "..." truncation markers, then take a 40-char fingerprint.
+        const fingerprint = (flash.lineText ?? "")
+          .replace(/^\.{3}/, "").replace(/\.{3}$/, "").trim().slice(0, 40).toLowerCase();
+
+        // Find where the fingerprint (or the query itself as fallback) sits in docText.
+        const anchorIdx = fingerprint.length >= 8
+          ? docText.toLowerCase().indexOf(fingerprint)
+          : docText.toLowerCase().indexOf(queryLower);
+
+        if (anchorIdx === -1) return;
+
+        // From the anchor, find the query match position
+        const matchIdx = docText.toLowerCase().indexOf(queryLower, anchorIdx);
+        if (matchIdx === -1) return;
+
+        // Walk ProseMirror text nodes to convert char offset → doc position
+        let textOffset = 0;
+        let found = false;
+        editor.state.doc.descendants((node, pos) => {
+          if (found || !node.isText) return !found;
+          const nodeLen = node.text!.length;
+          if (textOffset + nodeLen > matchIdx) {
+            const from = pos + (matchIdx - textOffset);
+            const to = from + queryLower.length;
+            editor.commands.setTextSelection({ from, to });
+            // Center the matched text in the viewport via DOM API
+            requestAnimationFrame(() => {
+              try {
+                const domPos = editor.view.domAtPos(from);
+                const el = (domPos.node instanceof Element
+                  ? domPos.node
+                  : domPos.node.parentElement) as HTMLElement | null;
+                el?.scrollIntoView({ behavior: "smooth", block: "center" });
+              } catch { /* ignore if pos is stale */ }
+            });
+            (editor.commands as any).flashSearchResult(from, to);
+            found = true;
+            return false;
+          }
+          textOffset += nodeLen;
+          return !found;
+        });
+      }, 80);
+    }
   }, [editor, state.fileVersion]); // eslint-disable-line
 
   // When switching tabs, load the tab's file
@@ -460,8 +524,13 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
       <CommandPalette
         open={state.commandPaletteOpen}
         onClose={() => dispatch({ type: "CLOSE_COMMAND_PALETTE" })}
-        onOpenFile={(path) => {
-          openFileByPath(path).then((ok) => { if (ok) addRecentFile(path); });
+        onOpenFile={(path, _lineNumber, searchQuery, lineText) => {
+          if (searchQuery) {
+            pendingFlash.current = { searchQuery, lineText };
+          }
+          openFileByPath(path).then((ok) => {
+            if (ok) addRecentFile(path);
+          });
         }}
         fileTree={state.fileTree}
         recentFiles={state.recentFiles}

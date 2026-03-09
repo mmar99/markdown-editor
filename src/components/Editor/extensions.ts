@@ -19,6 +19,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import { common, createLowlight } from "lowlight";
+import { SearchFlash } from "./searchFlash";
 
 const lowlight = createLowlight(common);
 
@@ -62,4 +63,5 @@ export const editorExtensions = [
   }),
   TextStyle,
   Color,
+  SearchFlash,
 ];

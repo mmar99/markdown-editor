@@ -124,13 +124,40 @@
   text-overflow: ellipsis;
 }
 
-.command-palette-item-path {
+/* Breadcrumb path — Notion-style folder hierarchy */
+.command-palette-breadcrumb {
+  display: flex;
+  align-items: center;
   font-family: var(--font-regular);
   font-size: var(--font-size-micro);
   color: var(--color-text-quaternary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.command-palette-breadcrumb-sep {
+  margin: 0 var(--spacing-xs);
+  color: var(--color-text-quaternary);
+  font-size: var(--font-size-micro);
+}
+
+.command-palette-breadcrumb-segment {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+/* Content result header — filename + breadcrumb inline */
+.command-palette-content-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  min-width: 0;
+  width: 100%;
 }
 
 /* Footer bar — Slack-style hints */
@@ -167,6 +194,31 @@
   font-weight: var(--font-weight-medium);
   color: var(--color-text-tertiary);
   line-height: 1;
+}
+
+/* Content result — two-line layout (filename + snippet) */
+.command-palette-content-layout {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.command-palette-snippet {
+  font-family: var(--font-regular);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.4;
+}
+
+/* Bold highlight on the matching text — Algolia/Linear pattern */
+.command-palette-match {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
 }
 
 /* Empty state */
