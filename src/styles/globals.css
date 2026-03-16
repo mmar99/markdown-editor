@@ -49,8 +49,18 @@ body,
   color: white;
 }
 
-/* Focus */
-*:focus-visible {
+/* Focus — only interactive elements, never editor or divs */
+button:focus-visible,
+a:focus-visible,
+select:focus-visible {
   outline: var(--focus-ring);
-  outline-offset: 0px;
+  outline-offset: 2px;
+}
+
+/* Kill focus rings on everything else (editor, wrappers, inputs styled manually) */
+div:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+.ProseMirror:focus-visible {
+  outline: none;
 }

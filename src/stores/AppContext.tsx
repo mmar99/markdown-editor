@@ -37,6 +37,9 @@ const initialState: AppState = {
   outlineOpen: true,
   settingsOpen: false,
   commandPaletteOpen: false,
+  findReplaceOpen: false,
+  navHistory: [],
+  navHistoryIndex: -1,
   workspacePath: null,
   fileTree: [],
   recentFiles: [],
@@ -62,7 +65,13 @@ type Action =
   | { type: "UPDATE_SETTINGS"; settings: Partial<Settings> }
   | { type: "RESTORE_SESSION"; workspacePath: string | null; settings: Settings; favorites: string[]; tabs: TabInfo[] }
   | { type: "OPEN_COMMAND_PALETTE" }
-  | { type: "CLOSE_COMMAND_PALETTE" };
+  | { type: "CLOSE_COMMAND_PALETTE" }
+  | { type: "OPEN_FIND_REPLACE" }
+  | { type: "CLOSE_FIND_REPLACE" }
+  | { type: "UPDATE_TAB_TITLE"; index: number; title: string }
+  | { type: "NAV_PUSH"; path: string }
+  | { type: "NAV_BACK" }
+  | { type: "NAV_FORWARD" };
 
 function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -174,6 +183,26 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, commandPaletteOpen: true };
     case "CLOSE_COMMAND_PALETTE":
       return { ...state, commandPaletteOpen: false };
+    case "OPEN_FIND_REPLACE":
+      return { ...state, findReplaceOpen: true };
+    case "CLOSE_FIND_REPLACE":
+      return { ...state, findReplaceOpen: false };
+    case "UPDATE_TAB_TITLE": {
+      const tabs = [...state.openTabs];
+      if (tabs[action.index]) tabs[action.index] = { ...tabs[action.index], title: action.title || undefined };
+      return { ...state, openTabs: tabs };
+    }
+    case "NAV_PUSH": {
+      if (state.navHistory[state.navHistoryIndex] === action.path) return state;
+      const newHistory = [...state.navHistory.slice(0, state.navHistoryIndex + 1), action.path];
+      return { ...state, navHistory: newHistory, navHistoryIndex: newHistory.length - 1 };
+    }
+    case "NAV_BACK":
+      if (state.navHistoryIndex <= 0) return state;
+      return { ...state, navHistoryIndex: state.navHistoryIndex - 1 };
+    case "NAV_FORWARD":
+      if (state.navHistoryIndex >= state.navHistory.length - 1) return state;
+      return { ...state, navHistoryIndex: state.navHistoryIndex + 1 };
     default:
       return state;
   }

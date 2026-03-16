@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo, useRef } from "react";
+import { useEffect, useCallback, useMemo, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { editorExtensions } from "./components/Editor/extensions";
@@ -17,6 +17,7 @@ import { OutlinePanel } from "./components/Sidebar/OutlinePanel";
 import { WelcomeScreen } from "./components/WelcomeScreen/WelcomeScreen";
 import { SettingsPanel } from "./components/Settings/SettingsPanel";
 import { CommandPalette } from "./components/CommandPalette/CommandPalette";
+import { FindReplace } from "./components/FindReplace/FindReplace";
 import "./components/Editor/editor.css";
 
 let hasContent = false;
@@ -29,6 +30,13 @@ function App() {
 
   // Pending flash: set before openFileByPath, consumed after setContent loads new file
   const pendingFlash = useRef<{ searchQuery: string; lineText?: string } | null>(null);
+  const editorWrapperRef = useRef<HTMLDivElement>(null);
+  // Navigation history — prevent double-push when jumping back/forward
+  const isNavJumping = useRef(false);
+  const prevNavHistoryIndex = useRef(state.navHistoryIndex);
+  // Resizable panels
+  const [sidebarWidth, setSidebarWidth] = useState(240);
+  const [outlineWidth, setOutlineWidth] = useState(220);
   // Suppresses onUpdate during file load to prevent false isDirty
   const suppressOnUpdate = useRef(false);
 
@@ -42,6 +50,12 @@ function App() {
     onUpdate: ({ editor }) => {
       if (suppressOnUpdate.current) return;
       dispatch({ type: "UPDATE_CONTENT", content: editor.getMarkdown() });
+      // Keep active tab title in sync with H1
+      let h1 = "";
+      editor.state.doc.descendants((node) => {
+        if (!h1 && node.type.name === "heading" && node.attrs.level === 1) h1 = node.textContent.trim();
+      });
+      dispatch({ type: "UPDATE_TAB_TITLE", index: state.activeTabIndex, title: h1 });
     },
     editorProps: { attributes: { class: "editor-content-area" } },
   });
@@ -61,6 +75,17 @@ function App() {
     suppressOnUpdate.current = false;
     // Sync currentContent with originalContent — isDirty stays false
     dispatch({ type: "UPDATE_CONTENT", content: state.originalContent });
+    // Update tab title with first H1
+    let h1 = "";
+    editor.state.doc.descendants((node) => {
+      if (!h1 && node.type.name === "heading" && node.attrs.level === 1) h1 = node.textContent.trim();
+    });
+    dispatch({ type: "UPDATE_TAB_TITLE", index: state.activeTabIndex, title: h1 });
+    // Push to navigation history (skip when jumping back/forward)
+    if (!isNavJumping.current && state.currentFilePath) {
+      dispatch({ type: "NAV_PUSH", path: state.currentFilePath });
+    }
+    isNavJumping.current = false;
 
     // Fire pending flash after new content is loaded
     const flash = pendingFlash.current;
@@ -117,14 +142,61 @@ function App() {
     }
   }, [editor, state.fileVersion]); // eslint-disable-line
 
-  // When switching tabs, load the tab's file
+  // When switching tabs, load the tab's file + close find/replace
   useEffect(() => {
     if (state.activeTabIndex < 0 || state.activeTabIndex >= state.openTabs.length) return;
     const tab = state.openTabs[state.activeTabIndex];
     if (tab && tab.path !== state.currentFilePath) {
+      if (state.findReplaceOpen) dispatch({ type: "CLOSE_FIND_REPLACE" });
       openFileByPath(tab.path).then((ok) => { if (ok) addRecentFile(tab.path); });
     }
   }, [state.activeTabIndex]); // eslint-disable-line
+
+  // Back/Forward navigation — open file when navHistoryIndex changes externally
+  useEffect(() => {
+    if (state.navHistoryIndex === prevNavHistoryIndex.current) return;
+    prevNavHistoryIndex.current = state.navHistoryIndex;
+    const path = state.navHistory[state.navHistoryIndex];
+    if (path && path !== state.currentFilePath) {
+      isNavJumping.current = true;
+      openFileByPath(path).then((ok) => { if (ok) addRecentFile(path); });
+    }
+  }, [state.navHistoryIndex]); // eslint-disable-line
+
+  // Resize handlers for sidebar and outline panels
+  const startSidebarResize = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+    document.body.style.cursor = "col-resize";
+    const onMove = (ev: MouseEvent) => {
+      setSidebarWidth(Math.max(150, Math.min(480, startWidth + ev.clientX - startX)));
+    };
+    const onUp = () => {
+      document.body.style.cursor = "";
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [sidebarWidth]);
+
+  const startOutlineResize = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = outlineWidth;
+    document.body.style.cursor = "col-resize";
+    const onMove = (ev: MouseEvent) => {
+      setOutlineWidth(Math.max(150, Math.min(480, startWidth - (ev.clientX - startX))));
+    };
+    const onUp = () => {
+      document.body.style.cursor = "";
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [outlineWidth]);
 
   // Sibling navigation info (for breadcrumb arrows)
   const siblingInfo = useMemo(() => {
@@ -354,6 +426,17 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
       dispatch({ type: state.commandPaletteOpen ? "CLOSE_COMMAND_PALETTE" : "OPEN_COMMAND_PALETTE" });
       return;
     }
+    // Find & Replace
+    if (e.key === "f") {
+      e.preventDefault();
+      if (state.findReplaceOpen) {
+        // Already open → refocus the search input
+        document.querySelector<HTMLInputElement>(".find-replace-input")?.focus();
+      } else {
+        dispatch({ type: "OPEN_FIND_REPLACE" });
+      }
+      return;
+    }
     switch (e.key) {
       case "o": {
         e.preventDefault();
@@ -403,7 +486,7 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
       }
       case "0": { e.preventDefault(); editor?.chain().focus().setParagraph().run(); break; }
     }
-  }, [editor, state.currentFilePath, state.currentContent, state.activeTabIndex, state.openTabs.length, state.commandPaletteOpen, dispatch, openFile, saveFile, saveFileAs, addRecentFile, refreshFile, handlePrint]);
+  }, [editor, state.currentFilePath, state.currentContent, state.activeTabIndex, state.openTabs.length, state.commandPaletteOpen, state.findReplaceOpen, dispatch, openFile, saveFile, saveFileAs, addRecentFile, refreshFile, handlePrint]);
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);
@@ -435,15 +518,53 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
   return (
     <div style={{ height: "100vh", display: "flex", backgroundColor: "var(--color-bg-sidebar)" }}>
       {/* Left sidebar (gray) — full height */}
-      <Sidebar />
+      {state.sidebarOpen && (
+        <>
+          <Sidebar width={sidebarWidth} />
+          {/* Sidebar resize handle */}
+          <div
+            onMouseDown={startSidebarResize}
+            style={{
+              width: "4px", flexShrink: 0, cursor: "col-resize",
+              background: "transparent", transition: `background var(--speed-quick) var(--ease-out-cubic)`,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-border-secondary)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          />
+        </>
+      )}
 
       {/* Main content area (tabs + breadcrumb + editor) */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Draggable title area for macOS */}
-        <div data-tauri-drag-region style={{ height: "38px", flexShrink: 0, display: "flex", alignItems: "flex-end" }}>
+        <div
+          data-tauri-drag-region
+          style={{
+            height: "38px", flexShrink: 0, display: "flex", alignItems: "flex-end",
+            paddingLeft: state.sidebarOpen ? "0" : "78px",
+          }}
+        >
+          {/* Sidebar toggle — always visible (hides when sidebar is open since sidebar has its own) */}
+          {!state.sidebarOpen && (
+            <PanelToggleBtn onClick={() => dispatch({ type: "TOGGLE_SIDEBAR" })} title="Show sidebar (⌘\\)">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ display: "block" }}>
+                <rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.2" />
+                <line x1="5.5" y1="1" x2="5.5" y2="15" stroke="currentColor" strokeWidth="1.2" />
+              </svg>
+            </PanelToggleBtn>
+          )}
+
           <div style={{ flex: 1 }}>
             <TabBar />
           </div>
+
+          {/* Outline toggle */}
+          <PanelToggleBtn onClick={() => dispatch({ type: "TOGGLE_OUTLINE" })} title="Toggle outline">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ display: "block" }}>
+              <rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.2" />
+              <line x1="10.5" y1="1" x2="10.5" y2="15" stroke="currentColor" strokeWidth="1.2" />
+            </svg>
+          </PanelToggleBtn>
         </div>
 
         {/* Breadcrumb bar (white) */}
@@ -460,14 +581,24 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
         {showWelcome ? (
           <WelcomeScreen />
         ) : (
-            <div
-              className="editor-wrapper"
-              style={{
-                flex: 1,
-                overflow: "auto",
-                backgroundColor: state.settings.bgColor !== "default" ? state.settings.bgColor : "var(--color-bg-primary)",
-              }}
-            >
+            /* Wrapper with position:relative so FindReplace stays sticky (not inside scrollable) */
+            <div style={{ flex: 1, position: "relative", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+              {/* Find & Replace — outside scrollable area, anchored to top-right */}
+              <FindReplace
+                editor={editor}
+                open={state.findReplaceOpen}
+                onClose={() => dispatch({ type: "CLOSE_FIND_REPLACE" })}
+              />
+
+              <div
+                ref={editorWrapperRef}
+                className="editor-wrapper"
+                style={{
+                  flex: 1,
+                  overflow: "auto",
+                  backgroundColor: state.settings.bgColor !== "default" ? state.settings.bgColor : "var(--color-bg-primary)",
+                }}
+              >
               <style>{`
                 .editor-content-area {
                   font-family: ${state.settings.fontFamily === "system" ? "var(--font-regular)" : state.settings.fontFamily};
@@ -486,6 +617,7 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
                   <button onClick={() => handleBubble("link")} className={editor.isActive("link") ? "is-active" : ""}>🔗</button>
                 </BubbleMenu>
               )}
+
               <EditorContent editor={editor} />
 
               {/* External change banner */}
@@ -499,22 +631,35 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
                 />
               )}
             </div>
+            </div>
           )}
         </div>
 
       {/* Right outline panel (gray) */}
       {!showWelcome && state.outlineOpen && (
-        <div style={{
-          width: "220px",
-          minWidth: "160px",
-          height: "100%",
-          backgroundColor: "var(--color-bg-sidebar)",
-          borderLeft: "1px solid var(--color-border-primary)",
-          flexShrink: 0,
-          overflow: "auto",
-        }}>
-          <OutlinePanel editor={editor} />
-        </div>
+        <>
+          {/* Outline resize handle */}
+          <div
+            onMouseDown={startOutlineResize}
+            style={{
+              width: "4px", flexShrink: 0, cursor: "col-resize",
+              background: "transparent", transition: `background var(--speed-quick) var(--ease-out-cubic)`,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-border-secondary)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          />
+          <div style={{
+            width: `${outlineWidth}px`,
+            minWidth: "150px",
+            height: "100%",
+            backgroundColor: "var(--color-bg-sidebar)",
+            borderLeft: "1px solid var(--color-border-primary)",
+            flexShrink: 0,
+            overflow: "auto",
+          }}>
+            <OutlinePanel editor={editor} scrollContainer={editorWrapperRef} />
+          </div>
+        </>
       )}
 
       {/* Settings overlay */}
@@ -538,6 +683,25 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
         workspacePath={state.workspacePath}
       />
     </div>
+  );
+}
+
+function PanelToggleBtn({ children, onClick, title }: { children: React.ReactNode; onClick: () => void; title: string }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      style={{
+        background: "none", border: "none", cursor: "default",
+        color: "var(--color-text-quaternary)", padding: "4px", marginBottom: "3px",
+        borderRadius: "var(--radius-sm)", lineHeight: 1, flexShrink: 0,
+        transition: `color var(--speed-quick) var(--ease-out-cubic)`,
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-quaternary)"; }}
+    >
+      {children}
+    </button>
   );
 }
 

@@ -91,8 +91,13 @@ export function BreadcrumbBar({ onNavigate, onExport, onPrint, siblingInfo }: Br
         </button>
       </div>
 
-      {/* Right: Export + Print + Navigation */}
+      {/* Right: Search + Export + Print + Navigation */}
       <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-sm)", flexShrink: 0 }}>
+        {/* Search (Find & Replace) */}
+        <BarBtn onClick={() => dispatch({ type: "OPEN_FIND_REPLACE" })} title="Find & Replace (⌘F)">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.3"/><path d="M10 10L14 14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+        </BarBtn>
+
         {/* Export dropdown */}
         <div ref={exportRef} style={{ position: "relative" }}>
           <BarBtn onClick={() => setExportOpen(!exportOpen)} title="Export">

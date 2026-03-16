@@ -10,6 +10,7 @@ export interface FileNode {
 export interface TabInfo {
   path: string;
   label: string; // filename without extension
+  title?: string; // first H1 heading (if any)
 }
 
 export interface AppState {
@@ -27,6 +28,10 @@ export interface AppState {
   outlineOpen: boolean;
   settingsOpen: boolean;
   commandPaletteOpen: boolean;
+  findReplaceOpen: boolean;
+  // Navigation history (back/forward)
+  navHistory: string[];
+  navHistoryIndex: number;
   // Workspace
   workspacePath: string | null;
   fileTree: FileNode[];

@@ -10,6 +10,11 @@
   background-color: var(--color-bg-primary);
 }
 
+/* Kill ProseMirror default focus ring */
+.ProseMirror {
+  outline: none;
+}
+
 /* ---- Content Area ---- */
 .editor-content-area {
   max-width: 800px;
@@ -352,8 +357,23 @@
 }
 
 /* ============================================================
-   SEARCH FLASH — Temporary pulse on search-to-scroll
+   SEARCH — In-page find/replace highlights + flash
    ============================================================ */
+
+/* All matches (yellow) */
+.find-match {
+  background-color: var(--color-search-match);
+  border-radius: 2px;
+  padding: 0.1em 0;
+}
+
+/* Active match (amber) */
+.find-match-active {
+  background-color: var(--color-search-match-active);
+  border-radius: 2px;
+  padding: 0.1em 0;
+  color: #1b1b1b; /* ensure contrast on amber background */
+}
 
 .search-flash-highlight {
   background-color: var(--color-warning-bg);

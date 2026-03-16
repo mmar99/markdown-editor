@@ -67,9 +67,9 @@ export function TabBar() {
               }} />
             )}
 
-            {/* Label */}
+            {/* Label — show H1 title if available, else filename */}
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {tab.label}
+              {tab.title || tab.label}
             </span>
 
             {/* Close — always show on active, hover for others */}

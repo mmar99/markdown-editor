@@ -1,0 +1,222 @@
+/* ============================================================
+   FIND & REPLACE WIDGET — Notion-faithful design
+   Anchored top-right of the non-scrolling editor container.
+   All colors via design tokens.
+   ============================================================ */
+
+.find-replace-widget {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  z-index: 100;
+
+  width: 340px;
+
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: 10px;
+  box-shadow: var(--shadow-xl);
+
+  display: flex;
+  flex-direction: column;
+
+  /* Slide down from above — Notion style */
+  animation: find-replace-in var(--speed-regular) var(--ease-out-quart) both;
+}
+
+@keyframes find-replace-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* Close: slide back up */
+.find-replace-widget--closing {
+  animation: find-replace-out 180ms var(--ease-out-cubic) both;
+  pointer-events: none;
+}
+
+@keyframes find-replace-out {
+  from { opacity: 1; transform: translateY(0);    }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+
+/* Kill any focus ring inside */
+.find-replace-widget *:focus-visible {
+  outline: none;
+}
+
+/* ---- Rows ---- */
+
+.find-replace-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 4px 6px 4px 12px;
+  min-height: 36px;
+}
+
+.find-replace-row--replace {
+  border-top: 1px solid var(--color-border-primary);
+}
+
+/* ---- Input ---- */
+
+.find-replace-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-regular);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-normal);
+  outline: none !important;
+  -webkit-appearance: none;
+  caret-color: var(--color-brand);
+}
+
+.find-replace-input::placeholder {
+  color: var(--color-text-quaternary);
+  font-weight: var(--font-weight-normal);
+}
+
+/* No results — text turns red */
+.find-replace-input--no-results {
+  color: var(--color-error);
+}
+
+/* Shake wrapper — animation lives here, separate from the input so color is never affected */
+.find-replace-shake-wrap {
+  animation: find-replace-shake 0.38s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes find-replace-shake {
+  0%,  100% { transform: translateX(0);   }
+  20%       { transform: translateX(-5px); }
+  40%       { transform: translateX(4px);  }
+  60%       { transform: translateX(-3px); }
+  80%       { transform: translateX(2px);  }
+}
+
+/* ---- Controls ---- */
+
+.find-replace-controls {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.find-replace-counter {
+  font-size: var(--font-size-mini);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  min-width: 40px;
+  text-align: right;
+  padding-right: 4px;
+  letter-spacing: 0.01em;
+}
+
+.find-replace-counter--empty {
+  color: var(--color-error);
+  min-width: 60px;
+}
+
+/* ---- Icon buttons — Notion style ---- */
+
+.find-replace-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: background var(--speed-quick) var(--ease-out-cubic),
+              color     var(--speed-quick) var(--ease-out-cubic);
+  flex-shrink: 0;
+  outline: none;
+}
+
+.find-replace-btn:hover:not(:disabled) {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.find-replace-btn:active:not(:disabled) {
+  background: var(--color-bg-tertiary);
+}
+
+.find-replace-btn:disabled {
+  opacity: 0.32;
+  cursor: default;
+}
+
+/* Active — replace toggle when open */
+.find-replace-btn--active {
+  background: var(--color-brand-light);
+  color: var(--color-brand);
+}
+
+.find-replace-btn--active:hover:not(:disabled) {
+  background: var(--color-brand-light);
+  color: var(--color-brand-hover);
+}
+
+/* Close button — slightly larger target */
+.find-replace-btn--close {
+  color: var(--color-text-quaternary);
+  margin-left: 2px;
+}
+
+/* ---- Replace action buttons ---- */
+
+.find-replace-replace-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.find-replace-action-btn {
+  height: 24px;
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-regular);
+  font-size: var(--font-size-mini);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  outline: none;
+  transition: background var(--speed-quick) var(--ease-out-cubic);
+}
+
+.find-replace-action-btn:hover:not(:disabled) {
+  background: var(--color-bg-secondary);
+}
+
+.find-replace-action-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.find-replace-action-btn--primary {
+  background: var(--color-brand);
+  border-color: var(--color-brand);
+  color: #ffffff;
+}
+
+.find-replace-action-btn--primary:hover:not(:disabled) {
+  background: var(--color-brand-hover);
+  border-color: var(--color-brand-hover);
+}

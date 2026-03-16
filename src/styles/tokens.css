@@ -78,6 +78,10 @@
   --color-selected-bg: #e9edf7;   /* Brand light */
   --color-code-bg: #f7f7f7;
 
+  /* Search highlights */
+  --color-search-match: #fef3c7;        /* yellow — all matches */
+  --color-search-match-active: #f59e0b; /* amber — active match */
+
   /* ========== SPACING ========== */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -149,4 +153,8 @@
   --color-code-bg: #1a1a1c;
 
   --color-warning-bg: #3d2e00;
+
+  /* Search highlights — dark */
+  --color-search-match: #78350f40;        /* dark amber tint */
+  --color-search-match-active: #d97706;   /* amber active */
 }
