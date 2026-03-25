@@ -15,7 +15,7 @@ const TREE_REFRESH_COOLDOWN_MS = 3000; // 3 seconds between tree re-scans
  * This is the same approach as VS Code, Typora, and most editors.
  * No polling, no file watcher — just check on focus. Simple, reliable, zero CPU.
  */
-export function useFileWatcher() {
+export function useFileWatcher(getCurrentContent?: () => string) {
   const { currentFilePath, originalContent, currentContent, isDirty, workspacePath } = useAppState();
   const dispatch = useAppDispatch();
   const { refreshTree } = useWorkspace();
@@ -26,11 +26,13 @@ export function useFileWatcher() {
   const isDirtyRef = useRef(isDirty);
   const currentContentRef = useRef(currentContent);
   const currentFileRef = useRef(currentFilePath);
+  const getCurrentContentRef = useRef(getCurrentContent);
 
   useEffect(() => { lastKnownRef.current = originalContent; }, [originalContent]);
   useEffect(() => { isDirtyRef.current = isDirty; }, [isDirty]);
   useEffect(() => { currentContentRef.current = currentContent; }, [currentContent]);
   useEffect(() => { currentFileRef.current = currentFilePath; }, [currentFilePath]);
+  useEffect(() => { getCurrentContentRef.current = getCurrentContent; }, [getCurrentContent]);
   useEffect(() => { setExternalChangeDetected(false); }, [currentFilePath]);
 
   // Check for external changes (called on window focus + Cmd+R)
@@ -108,7 +110,8 @@ export function useFileWatcher() {
       const ext = filePath.match(/\.[^.]+$/)?.[0] ?? ".md";
       const base = filePath.replace(/\.[^.]+$/, "");
       const copyPath = `${base} (my edits)${ext}`;
-      await writeTextFile(copyPath, currentContentRef.current);
+      const liveContent = getCurrentContentRef.current?.() ?? currentContentRef.current;
+      await writeTextFile(copyPath, liveContent);
       const disk = await readTextFile(filePath);
       lastKnownRef.current = disk;
       dispatch({ type: "OPEN_FILE", path: filePath, content: disk });

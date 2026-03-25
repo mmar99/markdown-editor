@@ -22,17 +22,36 @@ export function OutlinePanel({ editor, scrollContainer }: OutlinePanelProps) {
   const [activeIdx, setActiveIdx] = useState(0);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const rafRef = useRef<number | null>(null);
+  const headingRefreshRef = useRef<number | null>(null);
+  const headingsSignatureRef = useRef("");
 
   const updateHeadings = useCallback(() => {
     if (!editor) return;
-    setHeadings(getHeadings(editor));
+
+    if (headingRefreshRef.current !== null) return;
+
+    headingRefreshRef.current = requestAnimationFrame(() => {
+      headingRefreshRef.current = null;
+      const nextHeadings = getHeadings(editor);
+      const nextSignature = nextHeadings
+        .map((heading) => `${heading.level}:${heading.pos}:${heading.text}`)
+        .join("|");
+
+      if (nextSignature === headingsSignatureRef.current) return;
+
+      headingsSignatureRef.current = nextSignature;
+      setHeadings(nextHeadings);
+    });
   }, [editor]);
 
   useEffect(() => {
     if (!editor) return;
     updateHeadings();
     editor.on("update", updateHeadings);
-    return () => { editor.off("update", updateHeadings); };
+    return () => {
+      editor.off("update", updateHeadings);
+      if (headingRefreshRef.current !== null) cancelAnimationFrame(headingRefreshRef.current);
+    };
   }, [editor, updateHeadings]);
 
   // Scroll tracking — find the heading at ~1/3 from top of the editor viewport

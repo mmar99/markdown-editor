@@ -10,6 +10,7 @@ import {
 } from "cmdk";
 import type { FileNode } from "../../types";
 import { flattenFileTree } from "../../utils/flattenFileTree";
+import { HugeiconsIcon, File01Icon, StarIcon, TextAlignLeft01Icon } from "../Icons";
 import "./CommandPalette.css";
 
 interface SearchResult {
@@ -228,7 +229,7 @@ export function CommandPalette({
                         className="command-palette-item"
                       >
                         <span className="command-palette-item-icon">
-                          <FileIcon />
+                          <HugeiconsIcon icon={File01Icon} size={16} />
                         </span>
                         <div className="command-palette-item-content">
                           <span className="command-palette-item-name">
@@ -255,7 +256,7 @@ export function CommandPalette({
                         className="command-palette-item"
                       >
                         <span className="command-palette-item-icon">
-                          <StarIcon />
+                          <HugeiconsIcon icon={StarIcon} size={16} />
                         </span>
                         <div className="command-palette-item-content">
                           <span className="command-palette-item-name">
@@ -282,7 +283,7 @@ export function CommandPalette({
                         className="command-palette-item"
                       >
                         <span className="command-palette-item-icon">
-                          <FileIcon />
+                          <HugeiconsIcon icon={File01Icon} size={16} />
                         </span>
                         <div className="command-palette-item-content">
                           <span className="command-palette-item-name">
@@ -309,7 +310,7 @@ export function CommandPalette({
                       className="command-palette-item"
                     >
                       <span className="command-palette-item-icon">
-                        <FileIcon />
+                        <HugeiconsIcon icon={File01Icon} size={16} />
                       </span>
                       <div className="command-palette-item-content">
                         <span className="command-palette-item-name">
@@ -333,7 +334,7 @@ export function CommandPalette({
                       className="command-palette-item command-palette-content-item"
                     >
                       <span className="command-palette-item-icon">
-                        <TextLinesIcon />
+                        <HugeiconsIcon icon={TextAlignLeft01Icon} size={16} />
                       </span>
                       <div className="command-palette-item-content command-palette-content-layout">
                         <div className="command-palette-content-header">
@@ -378,29 +379,3 @@ export function CommandPalette({
   );
 }
 
-/* Inline SVG icons */
-
-function FileIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 1.5H4a1 1 0 00-1 1v11a1 1 0 001 1h8a1 1 0 001-1V5.5L9 1.5z" />
-      <path d="M9 1.5V5.5H13" />
-    </svg>
-  );
-}
-
-function StarIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" stroke="none">
-      <path d="M8 1.5l1.76 3.57 3.94.57-2.85 2.78.67 3.93L8 10.42l-3.52 1.93.67-3.93L2.3 5.64l3.94-.57L8 1.5z" />
-    </svg>
-  );
-}
-
-function TextLinesIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-      <path d="M3 4h10M3 8h7M3 12h9" />
-    </svg>
-  );
-}

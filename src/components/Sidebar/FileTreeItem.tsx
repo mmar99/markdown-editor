@@ -1,5 +1,6 @@
 import { useAppState } from "../../stores/AppContext";
 import type { FileNode } from "../../types";
+import { HugeiconsIcon, ArrowRight01Icon } from "../Icons";
 
 interface FileTreeItemProps {
   node: FileNode;
@@ -44,6 +45,7 @@ export function FileTreeItem({ node, depth, onFileClick, expandedPaths, toggleEx
       )}
 
       <button
+        data-tree-node-path={!node.isDirectory ? node.path : undefined}
         onClick={handleClick}
         style={{
           display: "flex",
@@ -90,7 +92,7 @@ export function FileTreeItem({ node, depth, onFileClick, expandedPaths, toggleEx
               display: "inline-block",
             }}
           >
-            ▶
+            <HugeiconsIcon icon={ArrowRight01Icon} size={9} strokeWidth={2} />
           </span>
         ) : (
           <span style={{ width: "12px", flexShrink: 0 }} />

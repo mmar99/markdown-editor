@@ -1,5 +1,6 @@
 import { useAppState, useAppDispatch } from "../../stores/AppContext";
 import { useTheme } from "../../hooks/useTheme";
+import { HugeiconsIcon, Cancel01Icon } from "../Icons";
 
 const FONT_OPTIONS = [
   { value: "system", label: "System Default" },
@@ -78,7 +79,7 @@ export function SettingsPanel() {
             borderRadius: "var(--radius-sm)",
           }}
         >
-          ×
+          <HugeiconsIcon icon={Cancel01Icon} size={14} />
         </button>
       </div>
 

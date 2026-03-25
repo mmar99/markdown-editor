@@ -51,7 +51,7 @@ type Action =
   | { type: "OPEN_FILE"; path: string; content: string }
   | { type: "NEW_FILE" }
   | { type: "UPDATE_CONTENT"; content: string }
-  | { type: "SAVE_FILE"; path?: string }
+  | { type: "SAVE_FILE"; path?: string; content?: string }
   | { type: "CLOSE_TAB"; index: number }
   | { type: "SWITCH_TAB"; index: number }
   | { type: "TOGGLE_SIDEBAR" }
@@ -105,12 +105,17 @@ function appReducer(state: AppState, action: Action): AppState {
       };
     }
     case "NEW_FILE": {
+      const newTab: TabInfo = { path: `untitled:${Date.now()}`, label: "Untitled" };
+      const newTabs = [...state.openTabs, newTab];
       return {
         ...state,
         currentFilePath: null,
         originalContent: "",
         currentContent: "",
         isDirty: false,
+        fileVersion: state.fileVersion + 1,
+        openTabs: newTabs,
+        activeTabIndex: newTabs.length - 1,
       };
     }
     case "UPDATE_CONTENT":
@@ -123,7 +128,8 @@ function appReducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         currentFilePath: action.path ?? state.currentFilePath,
-        originalContent: state.currentContent,
+        currentContent: action.content ?? state.currentContent,
+        originalContent: action.content ?? state.currentContent,
         isDirty: false,
       };
     case "CLOSE_TAB": {

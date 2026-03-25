@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { HugeiconsIcon, Cancel01Icon } from "../Icons";
 
 interface FileChangedBannerProps {
   isDirty: boolean;
@@ -142,7 +143,7 @@ export function FileChangedBanner({
             flexShrink: 0,
           }}
         >
-          ×
+          <HugeiconsIcon icon={Cancel01Icon} size={16} />
         </button>
       </div>
     </div>

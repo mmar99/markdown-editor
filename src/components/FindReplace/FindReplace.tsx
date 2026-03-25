@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { Editor } from "@tiptap/react";
+import { HugeiconsIcon, ArrowUp01Icon, ArrowDown01Icon, ArrowDataTransferVerticalIcon, Cancel01Icon } from "../Icons";
 import "./FindReplace.css";
 
 interface Props {
@@ -150,11 +151,11 @@ export function FindReplace({ editor, open, onClose }: Props) {
           )}
 
           <button className="find-replace-btn" onClick={handlePrev} disabled={matchCount === 0} title="Previous match (⌘↩)" aria-label="Previous match">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 8L6 4L10 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <HugeiconsIcon icon={ArrowUp01Icon} size={12} />
           </button>
 
           <button className="find-replace-btn" onClick={handleNext} disabled={matchCount === 0} title="Next match (↩)" aria-label="Next match">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <HugeiconsIcon icon={ArrowDown01Icon} size={12} />
           </button>
 
           <button
@@ -164,11 +165,11 @@ export function FindReplace({ editor, open, onClose }: Props) {
             aria-label="Toggle replace panel"
             aria-expanded={replaceOpen}
           >
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 4.5C2 3.12 3.12 2 4.5 2H9.5C10.88 2 12 3.12 12 4.5V6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M10 8L12 6L14 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 10C12 11.38 10.88 12.5 9.5 12.5H4.5C3.12 12.5 2 11.38 2 10V8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M4 10L2 12L0 10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <HugeiconsIcon icon={ArrowDataTransferVerticalIcon} size={13} strokeWidth={1.4} />
           </button>
 
           <button className="find-replace-btn find-replace-btn--close" onClick={onClose} aria-label="Close find">
-            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1 1L10 10M10 1L1 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            <HugeiconsIcon icon={Cancel01Icon} size={11} />
           </button>
         </div>
       </div>

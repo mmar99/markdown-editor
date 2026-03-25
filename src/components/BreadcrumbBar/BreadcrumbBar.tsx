@@ -1,5 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { useAppState, useAppDispatch } from "../../stores/AppContext";
+import { HugeiconsIcon, Search01Icon, Download02Icon, PrinterIcon, ArrowUp01Icon, ArrowDown01Icon, StarIcon } from "../Icons";
+import { Tooltip } from "../Tooltip/Tooltip";
 
 interface BreadcrumbBarProps {
   onNavigate: (direction: "prev" | "next") => void;
@@ -78,30 +80,33 @@ export function BreadcrumbBar({ onNavigate, onExport, onPrint, siblingInfo }: Br
           <span style={{ width: "6px", height: "6px", borderRadius: "var(--radius-circle)", backgroundColor: "var(--color-brand)", marginLeft: "6px", flexShrink: 0 }} />
         )}
 
-        <button
-          onClick={() => currentFilePath && dispatch({ type: "TOGGLE_FAVORITE", path: currentFilePath })}
-          style={{
-            background: "none", border: "none", cursor: "default",
-            fontSize: "13px", color: isFavorite ? "var(--color-warning)" : "var(--color-text-quaternary)",
-            padding: "2px 4px", marginLeft: "2px", borderRadius: "var(--radius-sm)", lineHeight: 1,
-            transition: `color var(--speed-quick) var(--ease-out-cubic)`,
-          }}
-        >
-          {isFavorite ? "★" : "☆"}
-        </button>
+        <Tooltip content={isFavorite ? "Remove favorite" : "Add favorite"}>
+          <button
+            onClick={() => currentFilePath && dispatch({ type: "TOGGLE_FAVORITE", path: currentFilePath })}
+            aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
+            style={{
+              background: "none", border: "none", cursor: "default",
+              fontSize: "13px", color: isFavorite ? "var(--color-warning)" : "var(--color-text-quaternary)",
+              padding: "2px 4px", marginLeft: "2px", borderRadius: "var(--radius-sm)", lineHeight: 1,
+              transition: `color var(--speed-quick) var(--ease-out-cubic)`,
+            }}
+          >
+            <HugeiconsIcon icon={StarIcon} size={13} />
+          </button>
+        </Tooltip>
       </div>
 
       {/* Right: Search + Export + Print + Navigation */}
       <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-sm)", flexShrink: 0 }}>
         {/* Search (Find & Replace) */}
-        <BarBtn onClick={() => dispatch({ type: "OPEN_FIND_REPLACE" })} title="Find & Replace (⌘F)">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.3"/><path d="M10 10L14 14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+        <BarBtn onClick={() => dispatch({ type: "OPEN_FIND_REPLACE" })} title="Find & Replace" shortcut="⌘F">
+          <HugeiconsIcon icon={Search01Icon} size={13} strokeWidth={1.3} />
         </BarBtn>
 
         {/* Export dropdown */}
         <div ref={exportRef} style={{ position: "relative" }}>
           <BarBtn onClick={() => setExportOpen(!exportOpen)} title="Export">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3M3 12h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <HugeiconsIcon icon={Download02Icon} size={14} strokeWidth={1.3} />
           </BarBtn>
           {exportOpen && (
             <div style={{
@@ -124,8 +129,8 @@ export function BreadcrumbBar({ onNavigate, onExport, onPrint, siblingInfo }: Br
         </div>
 
         {/* Print */}
-        <BarBtn onClick={onPrint} title="Print (Cmd+P)">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6V2h8v4M4 12H2V8h12v4h-2M4 10h8v4H4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <BarBtn onClick={onPrint} title="Print" shortcut="⌘P">
+          <HugeiconsIcon icon={PrinterIcon} size={14} strokeWidth={1.2} />
         </BarBtn>
 
         {/* Separator */}
@@ -139,11 +144,11 @@ export function BreadcrumbBar({ onNavigate, onExport, onPrint, siblingInfo }: Br
             <span style={{ fontSize: "var(--font-size-mini)", color: "var(--color-text-quaternary)" }}>
               {siblingInfo.current}/{siblingInfo.total}
             </span>
-            <NavBtn onClick={() => onNavigate("prev")} title="Previous file">
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 6.5L5 3.5L8 6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <NavBtn onClick={() => onNavigate("prev")} title="Previous file" shortcut="↑">
+              <HugeiconsIcon icon={ArrowUp01Icon} size={10} strokeWidth={1.3} />
             </NavBtn>
-            <NavBtn onClick={() => onNavigate("next")} title="Next file">
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <NavBtn onClick={() => onNavigate("next")} title="Next file" shortcut="↓">
+              <HugeiconsIcon icon={ArrowDown01Icon} size={10} strokeWidth={1.3} />
             </NavBtn>
           </>
         )}
@@ -152,11 +157,21 @@ export function BreadcrumbBar({ onNavigate, onExport, onPrint, siblingInfo }: Br
   );
 }
 
-function BarBtn({ children, onClick, title }: { children: React.ReactNode; onClick: () => void; title: string }) {
-  return (
+function BarBtn({
+  children,
+  onClick,
+  title,
+  shortcut,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  title: string;
+  shortcut?: string | string[];
+}) {
+  const button = (
     <button
       onClick={onClick}
-      title={title}
+      aria-label={title}
       style={{
         display: "flex", alignItems: "center", justifyContent: "center",
         width: "26px", height: "26px",
@@ -173,11 +188,23 @@ function BarBtn({ children, onClick, title }: { children: React.ReactNode; onCli
       {children}
     </button>
   );
+
+  return <Tooltip content={title} shortcut={shortcut}>{button}</Tooltip>;
 }
 
-function NavBtn({ children, onClick, title }: { children: React.ReactNode; onClick: () => void; title: string }) {
-  return (
-    <button onClick={onClick} title={title} style={{
+function NavBtn({
+  children,
+  onClick,
+  title,
+  shortcut,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  title: string;
+  shortcut?: string | string[];
+}) {
+  const button = (
+    <button onClick={onClick} aria-label={title} style={{
       display: "flex", alignItems: "center", justifyContent: "center",
       width: "22px", height: "22px",
       background: "var(--color-bg-primary)",
@@ -193,6 +220,8 @@ function NavBtn({ children, onClick, title }: { children: React.ReactNode; onCli
       {children}
     </button>
   );
+
+  return <Tooltip content={title} shortcut={shortcut}>{button}</Tooltip>;
 }
 
 function DropdownItem({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {

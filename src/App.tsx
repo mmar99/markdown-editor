@@ -1,5 +1,5 @@
-import { useEffect, useCallback, useMemo, useRef, useState } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEffect, useCallback, useMemo, useRef, useState, startTransition } from "react";
+import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { editorExtensions } from "./components/Editor/extensions";
 import { useAppState, useAppDispatch } from "./stores/AppContext";
@@ -18,9 +18,26 @@ import { WelcomeScreen } from "./components/WelcomeScreen/WelcomeScreen";
 import { SettingsPanel } from "./components/Settings/SettingsPanel";
 import { CommandPalette } from "./components/CommandPalette/CommandPalette";
 import { FindReplace } from "./components/FindReplace/FindReplace";
+import {
+  HugeiconsIcon,
+  SidebarLeftIcon,
+  SidebarRightIcon,
+} from "./components/Icons";
+import { Tooltip } from "./components/Tooltip/Tooltip";
+import { buildExportDocumentHtml } from "./utils/exportDocument";
 import "./components/Editor/editor.css";
 
 let hasContent = false;
+
+function getEditorTitle(editor: Editor): string {
+  let h1 = "";
+  editor.state.doc.descendants((node) => {
+    if (!h1 && node.type.name === "heading" && node.attrs.level === 1) {
+      h1 = node.textContent.trim();
+    }
+  });
+  return h1;
+}
 
 function App() {
   const state = useAppState();
@@ -39,6 +56,7 @@ function App() {
   const [outlineWidth, setOutlineWidth] = useState(220);
   // Suppresses onUpdate during file load to prevent false isDirty
   const suppressOnUpdate = useRef(false);
+  const pendingSyncFrame = useRef<number | null>(null);
 
   useSession();
   useFileOpen();
@@ -49,22 +67,52 @@ function App() {
     contentType: "markdown",
     onUpdate: ({ editor }) => {
       if (suppressOnUpdate.current) return;
-      dispatch({ type: "UPDATE_CONTENT", content: editor.getMarkdown() });
-      // Keep active tab title in sync with H1
-      let h1 = "";
-      editor.state.doc.descendants((node) => {
-        if (!h1 && node.type.name === "heading" && node.attrs.level === 1) h1 = node.textContent.trim();
+      if (pendingSyncFrame.current !== null) return;
+      pendingSyncFrame.current = requestAnimationFrame(() => {
+        pendingSyncFrame.current = null;
+        const markdown = editor.getMarkdown();
+        const title = getEditorTitle(editor);
+        const tabIndex = state.activeTabIndex;
+
+        startTransition(() => {
+          dispatch({ type: "UPDATE_CONTENT", content: markdown });
+          dispatch({ type: "UPDATE_TAB_TITLE", index: tabIndex, title });
+        });
       });
-      dispatch({ type: "UPDATE_TAB_TITLE", index: state.activeTabIndex, title: h1 });
     },
     editorProps: { attributes: { class: "editor-content-area" } },
   });
 
   // Watch for external file changes + Cmd+R refresh (also refreshes tree on focus)
-  const { externalChangeDetected, reload, keepMine, keepBoth, dismiss, refreshFile } = useFileWatcher();
+  const { externalChangeDetected, reload, keepMine, keepBoth, dismiss, refreshFile } = useFileWatcher(
+    () => editor?.getMarkdown() ?? state.currentContent,
+  );
   const { refreshTree } = useWorkspace();
 
+  const syncEditorState = useCallback((editorInstance: Editor | null, tabIndex: number) => {
+    if (!editorInstance) return "";
+
+    if (pendingSyncFrame.current !== null) {
+      cancelAnimationFrame(pendingSyncFrame.current);
+      pendingSyncFrame.current = null;
+    }
+
+    const markdown = editorInstance.getMarkdown();
+    const title = getEditorTitle(editorInstance);
+
+    startTransition(() => {
+      dispatch({ type: "UPDATE_CONTENT", content: markdown });
+      dispatch({ type: "UPDATE_TAB_TITLE", index: tabIndex, title });
+    });
+
+    return markdown;
+  }, [dispatch]);
+
   useEffect(() => { loadRecentFiles(); }, []); // eslint-disable-line
+
+  useEffect(() => () => {
+    if (pendingSyncFrame.current !== null) cancelAnimationFrame(pendingSyncFrame.current);
+  }, []);
 
   // Load content when fileVersion changes (new file opened)
   useEffect(() => {
@@ -73,14 +121,7 @@ function App() {
     suppressOnUpdate.current = true;
     editor.commands.setContent(state.originalContent, { contentType: "markdown" });
     suppressOnUpdate.current = false;
-    // Sync currentContent with originalContent — isDirty stays false
-    dispatch({ type: "UPDATE_CONTENT", content: state.originalContent });
-    // Update tab title with first H1
-    let h1 = "";
-    editor.state.doc.descendants((node) => {
-      if (!h1 && node.type.name === "heading" && node.attrs.level === 1) h1 = node.textContent.trim();
-    });
-    dispatch({ type: "UPDATE_TAB_TITLE", index: state.activeTabIndex, title: h1 });
+    syncEditorState(editor, state.activeTabIndex);
     // Push to navigation history (skip when jumping back/forward)
     if (!isNavJumping.current && state.currentFilePath) {
       dispatch({ type: "NAV_PUSH", path: state.currentFilePath });
@@ -230,152 +271,8 @@ function App() {
   const buildExportHtml = useCallback(() => {
     if (!editor) return "";
     const html = editor.getHTML();
-    const title = (() => {
-      let t = "";
-      editor.state.doc.descendants((node) => {
-        if (!t && node.type.name === "heading" && node.attrs.level === 1) t = node.textContent.trim();
-      });
-      return t || "Document";
-    })();
-    return `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>${title}</title>
-<style>
-/* === Base === */
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-  font-size: 10pt;
-  line-height: 1.55;
-  color: #1b1b1b;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-/* === Page setup — no headers/footers, clean margins === */
-@page {
-  margin: 2cm 2.5cm;
-  @top-left { content: none; }
-  @top-right { content: none; }
-  @bottom-left { content: none; }
-  @bottom-right { content: counter(page); font-size: 8pt; color: #9b9b9d; }
-}
-
-/* === Headings === */
-h1 { font-size: 18pt; font-weight: 700; margin: 0 0 6pt 0; line-height: 1.2; }
-h2 { font-size: 14pt; font-weight: 600; margin: 18pt 0 4pt 0; line-height: 1.25; }
-h3 { font-size: 11pt; font-weight: 600; margin: 14pt 0 3pt 0; }
-h4, h5, h6 { font-size: 10pt; font-weight: 600; margin: 10pt 0 2pt 0; }
-h5, h6 { color: #5b5c5d; }
-
-/* === Paragraphs === */
-p { margin: 0 0 6pt 0; orphans: 3; widows: 3; }
-
-/* === Bold, italic, etc === */
-strong { font-weight: 700; }
-em { font-style: italic; }
-u { text-decoration: underline; text-underline-offset: 2px; }
-s { text-decoration: line-through; color: #5b5c5d; }
-
-/* === Links === */
-a { color: #5e6ad2; text-decoration: none; }
-
-/* === Inline code === */
-code {
-  font-family: "SF Mono", "Menlo", Consolas, monospace;
-  font-size: 8.5pt;
-  background: #f3f4f6;
-  padding: 1px 4px;
-  border-radius: 3px;
-}
-
-/* === Code blocks === */
-pre {
-  font-family: "SF Mono", "Menlo", Consolas, monospace;
-  font-size: 8pt;
-  line-height: 1.5;
-  background: #f7f7f7;
-  border: 1px solid #eeeeee;
-  border-radius: 4px;
-  padding: 8pt 10pt;
-  margin: 8pt 0;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  page-break-inside: avoid;
-}
-pre code { background: none; padding: 0; font-size: inherit; }
-
-/* === Blockquotes === */
-blockquote {
-  border-left: 2.5px solid #5e6ad2;
-  padding: 4pt 10pt;
-  margin: 8pt 0;
-  background: #f8f8f8;
-  color: #2f2f31;
-}
-blockquote p { margin: 0 0 3pt 0; }
-
-/* === Lists === */
-ul, ol { margin: 4pt 0; padding-left: 18pt; }
-li { margin-bottom: 2pt; }
-li p { margin: 0 0 2pt 0; }
-
-/* === Task lists (checkboxes) === */
-ul[data-type="taskList"] { list-style: none; padding-left: 0; }
-ul[data-type="taskList"] li {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  margin-bottom: 3pt;
-}
-ul[data-type="taskList"] li > label { flex-shrink: 0; margin-top: 1px; }
-ul[data-type="taskList"] li > label input[type="checkbox"] {
-  width: 10px; height: 10px;
-  margin: 0;
-  accent-color: #5e6ad2;
-}
-ul[data-type="taskList"] li > div { flex: 1; }
-ul[data-type="taskList"] li[data-checked="true"] > div {
-  text-decoration: line-through;
-  color: #9b9b9d;
-}
-
-/* === Tables === */
-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 8pt 0;
-  font-size: 9pt;
-  page-break-inside: avoid;
-}
-th, td {
-  border: 1px solid #dcdcdc;
-  padding: 5pt 8pt;
-  text-align: left;
-  vertical-align: top;
-}
-th {
-  background: #f5f5f5;
-  font-weight: 600;
-  font-size: 8pt;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: #5b5c5d;
-}
-
-/* === Images === */
-img { max-width: 100%; page-break-inside: avoid; }
-
-/* === Highlight === */
-mark { background: #fef08a; padding: 1px 2px; }
-
-/* === Horizontal rule === */
-hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
-
-/* === Print-specific: hide browser chrome === */
-@media print {
-  body { margin: 0; padding: 0; }
-}
-</style></head><body>${html}</body></html>`;
+    const title = getEditorTitle(editor) || "Document";
+    return buildExportDocumentHtml(title, html);
   }, [editor]);
 
   // Get a smart export filename from the document's first H1
@@ -414,11 +311,72 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
 
   // Print — native macOS print sheet (Tauri overrides window.print())
   const handlePrint = useCallback(() => {
-    window.print();
-  }, []);
+    if (!editor) return;
+
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.opacity = "0";
+    iframe.style.pointerEvents = "none";
+
+    const cleanup = () => {
+      iframe.remove();
+    };
+
+    iframe.onload = () => {
+      const frameWindow = iframe.contentWindow;
+      if (!frameWindow) {
+        cleanup();
+        window.print();
+        return;
+      }
+
+      frameWindow.addEventListener("afterprint", cleanup, { once: true });
+      frameWindow.focus();
+
+      try {
+        frameWindow.print();
+      } catch {
+        cleanup();
+        window.print();
+        return;
+      }
+
+      window.setTimeout(cleanup, 60000);
+    };
+
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument;
+    if (!doc) {
+      cleanup();
+      window.print();
+      return;
+    }
+    doc.open();
+    doc.write(buildExportHtml());
+    doc.close();
+  }, [editor, buildExportHtml]);
 
   // Keyboard shortcuts
   const handleKeyDown = useCallback(async (e: KeyboardEvent) => {
+    // Ctrl+PageUp/PageDown — navigate tabs (Chrome/Linear standard)
+    if (e.ctrlKey && e.key === "PageUp") {
+      e.preventDefault();
+      const prev = Math.max(0, state.activeTabIndex - 1);
+      dispatch({ type: "SWITCH_TAB", index: prev });
+      return;
+    }
+    if (e.ctrlKey && e.key === "PageDown") {
+      e.preventDefault();
+      const next = Math.min(state.openTabs.length - 1, state.activeTabIndex + 1);
+      dispatch({ type: "SWITCH_TAB", index: next });
+      return;
+    }
     if (!e.metaKey) return;
     // Command palette
     if (e.key === "k") {
@@ -446,19 +404,21 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
       }
       case "s": {
         e.preventDefault();
+        const liveContent = syncEditorState(editor, state.activeTabIndex) || state.currentContent;
         if (e.shiftKey) {
-          const path = await saveFileAs(state.currentContent);
+          const path = await saveFileAs(liveContent);
           if (path) addRecentFile(path);
         } else if (state.currentFilePath) {
-          await saveFile(state.currentFilePath, state.currentContent);
+          await saveFile(state.currentFilePath, liveContent);
         } else {
-          const path = await saveFileAs(state.currentContent);
+          const path = await saveFileAs(liveContent);
           if (path) addRecentFile(path);
         }
         break;
       }
       case "w": { e.preventDefault(); if (state.activeTabIndex >= 0) dispatch({ type: "CLOSE_TAB", index: state.activeTabIndex }); break; }
-      case "n": { e.preventDefault(); dispatch({ type: "NEW_FILE" }); editor?.commands.setContent("", { contentType: "markdown" }); hasContent = true; break; }
+      case "n":
+      case "t": { e.preventDefault(); dispatch({ type: "NEW_FILE" }); editor?.commands.setContent("", { contentType: "markdown" }); hasContent = true; break; }
       case "r": { e.preventDefault(); refreshFile(); if (state.workspacePath) refreshTree(state.workspacePath); break; }
       case "p": { e.preventDefault(); handlePrint(); break; }
       case "\\": { e.preventDefault(); dispatch({ type: "TOGGLE_SIDEBAR" }); break; }
@@ -518,21 +478,38 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
   return (
     <div style={{ height: "100vh", display: "flex", backgroundColor: "var(--color-bg-sidebar)" }}>
       {/* Left sidebar (gray) — full height */}
-      {state.sidebarOpen && (
-        <>
+      <div
+        style={{
+          width: state.sidebarOpen ? `${sidebarWidth + 4}px` : "0px",
+          minWidth: 0,
+          flexShrink: 0,
+          overflow: "hidden",
+          transition: `width var(--speed-regular) var(--ease-out-quart)`,
+        }}
+      >
+        <div
+          style={{
+            width: `${sidebarWidth + 4}px`,
+            height: "100%",
+            display: "flex",
+            transform: state.sidebarOpen ? "translateX(0)" : "translateX(-12px)",
+            opacity: state.sidebarOpen ? 1 : 0,
+            pointerEvents: state.sidebarOpen ? "auto" : "none",
+            transition: `transform var(--speed-regular) var(--ease-out-quart), opacity var(--speed-quick) var(--ease-out-cubic)`,
+          }}
+        >
           <Sidebar width={sidebarWidth} />
-          {/* Sidebar resize handle */}
           <div
-            onMouseDown={startSidebarResize}
+            onMouseDown={state.sidebarOpen ? startSidebarResize : undefined}
             style={{
-              width: "4px", flexShrink: 0, cursor: "col-resize",
+              width: "4px", flexShrink: 0, cursor: state.sidebarOpen ? "col-resize" : "default",
               background: "transparent", transition: `background var(--speed-quick) var(--ease-out-cubic)`,
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-border-secondary)"; }}
+            onMouseEnter={(e) => { if (state.sidebarOpen) e.currentTarget.style.background = "var(--color-border-secondary)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           />
-        </>
-      )}
+        </div>
+      </div>
 
       {/* Main content area (tabs + breadcrumb + editor) */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -546,24 +523,18 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
         >
           {/* Sidebar toggle — always visible (hides when sidebar is open since sidebar has its own) */}
           {!state.sidebarOpen && (
-            <PanelToggleBtn onClick={() => dispatch({ type: "TOGGLE_SIDEBAR" })} title="Show sidebar (⌘\\)">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ display: "block" }}>
-                <rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.2" />
-                <line x1="5.5" y1="1" x2="5.5" y2="15" stroke="currentColor" strokeWidth="1.2" />
-              </svg>
+            <PanelToggleBtn onClick={() => dispatch({ type: "TOGGLE_SIDEBAR" })} title="Show sidebar" shortcut="⌘\\">
+              <HugeiconsIcon icon={SidebarLeftIcon} size={14} strokeWidth={1.2} />
             </PanelToggleBtn>
           )}
 
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
             <TabBar />
           </div>
 
           {/* Outline toggle */}
           <PanelToggleBtn onClick={() => dispatch({ type: "TOGGLE_OUTLINE" })} title="Toggle outline">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ display: "block" }}>
-              <rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.2" />
-              <line x1="10.5" y1="1" x2="10.5" y2="15" stroke="currentColor" strokeWidth="1.2" />
-            </svg>
+            <HugeiconsIcon icon={SidebarRightIcon} size={14} strokeWidth={1.2} />
           </PanelToggleBtn>
         </div>
 
@@ -636,30 +607,49 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
         </div>
 
       {/* Right outline panel (gray) */}
-      {!showWelcome && state.outlineOpen && (
-        <>
-          {/* Outline resize handle */}
-          <div
-            onMouseDown={startOutlineResize}
-            style={{
-              width: "4px", flexShrink: 0, cursor: "col-resize",
-              background: "transparent", transition: `background var(--speed-quick) var(--ease-out-cubic)`,
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-border-secondary)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-          />
-          <div style={{
-            width: `${outlineWidth}px`,
-            minWidth: "150px",
-            height: "100%",
-            backgroundColor: "var(--color-bg-sidebar)",
-            borderLeft: "1px solid var(--color-border-primary)",
+      {!showWelcome && (
+        <div
+          style={{
+            width: state.outlineOpen ? `${outlineWidth + 4}px` : "0px",
+            minWidth: 0,
             flexShrink: 0,
-            overflow: "auto",
-          }}>
-            <OutlinePanel editor={editor} scrollContainer={editorWrapperRef} />
+            overflow: "hidden",
+            transition: `width var(--speed-regular) var(--ease-out-quart)`,
+          }}
+        >
+          <div
+            style={{
+              width: `${outlineWidth + 4}px`,
+              height: "100%",
+              display: "flex",
+              transform: state.outlineOpen ? "translateX(0)" : "translateX(12px)",
+              opacity: state.outlineOpen ? 1 : 0,
+              pointerEvents: state.outlineOpen ? "auto" : "none",
+              transition: `transform var(--speed-regular) var(--ease-out-quart), opacity var(--speed-quick) var(--ease-out-cubic)`,
+            }}
+          >
+            <div
+              onMouseDown={state.outlineOpen ? startOutlineResize : undefined}
+              style={{
+                width: "4px", flexShrink: 0, cursor: state.outlineOpen ? "col-resize" : "default",
+                background: "transparent", transition: `background var(--speed-quick) var(--ease-out-cubic)`,
+              }}
+              onMouseEnter={(e) => { if (state.outlineOpen) e.currentTarget.style.background = "var(--color-border-secondary)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            />
+            <div style={{
+              width: `${outlineWidth}px`,
+              minWidth: "150px",
+              height: "100%",
+              backgroundColor: "var(--color-bg-sidebar)",
+              borderLeft: "1px solid var(--color-border-primary)",
+              flexShrink: 0,
+              overflow: "auto",
+            }}>
+              <OutlinePanel editor={editor} scrollContainer={editorWrapperRef} />
+            </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* Settings overlay */}
@@ -686,22 +676,56 @@ hr { border: none; border-top: 1px solid #dcdcdc; margin: 14pt 0; }
   );
 }
 
-function PanelToggleBtn({ children, onClick, title }: { children: React.ReactNode; onClick: () => void; title: string }) {
-  return (
+function PanelToggleBtn({
+  children,
+  onClick,
+  title,
+  shortcut,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  title: string;
+  shortcut?: string | string[];
+}) {
+  const button = (
     <button
       onClick={onClick}
-      title={title}
+      aria-label={title}
       style={{
-        background: "none", border: "none", cursor: "default",
-        color: "var(--color-text-quaternary)", padding: "4px", marginBottom: "3px",
-        borderRadius: "var(--radius-sm)", lineHeight: 1, flexShrink: 0,
-        transition: `color var(--speed-quick) var(--ease-out-cubic)`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "24px",
+        height: "24px",
+        background: "transparent",
+        border: "none",
+        cursor: "default",
+        color: "var(--color-text-quaternary)",
+        padding: 0,
+        marginBottom: "6px",
+        marginLeft: "4px",
+        borderRadius: "var(--radius-sm)",
+        lineHeight: 1,
+        flexShrink: 0,
+        transition: `color var(--speed-quick) var(--ease-out-cubic), background var(--speed-quick) var(--ease-out-cubic)`,
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-text-secondary)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-text-quaternary)"; }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.color = "var(--color-text-secondary)";
+        e.currentTarget.style.background = "var(--color-hover)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.color = "var(--color-text-quaternary)";
+        e.currentTarget.style.background = "transparent";
+      }}
     >
       {children}
     </button>
+  );
+
+  return (
+    <Tooltip content={title} shortcut={shortcut} disabled={!title}>
+      {button}
+    </Tooltip>
   );
 }
 

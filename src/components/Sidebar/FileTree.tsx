@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useAppState } from "../../stores/AppContext";
 import { useWorkspace } from "../../hooks/useWorkspace";
 import { useFileSystem } from "../../hooks/useFileSystem";
@@ -10,6 +10,7 @@ export function FileTree() {
   const { openFolder } = useWorkspace();
   const { openFileByPath } = useFileSystem();
   const { addRecentFile } = useRecentFiles();
+  const treeRootRef = useRef<HTMLDivElement>(null);
 
   // Expanded folder state — lifted here so it survives tree refreshes
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => {
@@ -38,13 +39,43 @@ export function FileTree() {
     setExpandedPaths(initial);
   }, [workspacePath]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (!workspacePath || !currentFilePath || !currentFilePath.startsWith(workspacePath)) return;
+
+    const relativeParts = currentFilePath
+      .slice(workspacePath.length + 1)
+      .split("/")
+      .slice(0, -1);
+
+    if (relativeParts.length > 0) {
+      setExpandedPaths((prev) => {
+        const next = new Set(prev);
+        let cursor = workspacePath;
+        for (const part of relativeParts) {
+          cursor = `${cursor}/${part}`;
+          next.add(cursor);
+        }
+        return next;
+      });
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const target = Array.from(
+          treeRootRef.current?.querySelectorAll<HTMLButtonElement>("[data-tree-node-path]") ?? [],
+        ).find((node) => node.dataset.treeNodePath === currentFilePath);
+        target?.scrollIntoView({ block: "center", behavior: "smooth" });
+      });
+    });
+  }, [workspacePath, currentFilePath]);
+
   const handleFileClick = async (path: string) => {
     const success = await openFileByPath(path);
     if (success) addRecentFile(path);
   };
 
   return (
-    <div style={{ padding: "var(--spacing-sm) 0" }}>
+    <div ref={treeRootRef} style={{ padding: "var(--spacing-sm) 0" }}>
       {/* Recents */}
       {recentFiles.length > 0 && (
         <Section label="Recents">

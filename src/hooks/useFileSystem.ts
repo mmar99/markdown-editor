@@ -21,7 +21,7 @@ export function useFileSystem() {
 
   async function saveFile(path: string, content: string) {
     await writeTextFile(path, content);
-    dispatch({ type: "SAVE_FILE", path });
+    dispatch({ type: "SAVE_FILE", path, content });
   }
 
   async function saveFileAs(content: string) {
@@ -32,7 +32,7 @@ export function useFileSystem() {
     if (!filePath) return null;
 
     await writeTextFile(filePath, content);
-    dispatch({ type: "SAVE_FILE", path: filePath });
+    dispatch({ type: "SAVE_FILE", path: filePath, content });
     return filePath;
   }
 

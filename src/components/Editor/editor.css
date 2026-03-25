@@ -469,30 +469,79 @@
     font-size: 10pt !important;
     line-height: 1.55 !important;
     color: #1b1b1b !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
-  .editor-content-area h1 { font-size: 18pt !important; margin: 0 0 6pt 0 !important; }
-  .editor-content-area h2 { font-size: 14pt !important; margin: 18pt 0 4pt 0 !important; }
-  .editor-content-area h3 { font-size: 11pt !important; margin: 14pt 0 3pt 0 !important; }
+  .editor-content-area h1,
+  .editor-content-area h2,
+  .editor-content-area h3,
+  .editor-content-area h4,
+  .editor-content-area h5,
+  .editor-content-area h6 {
+    break-after: avoid-page !important;
+    break-inside: avoid-page !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .editor-content-area h1 { font-size: 18pt !important; margin: 0 0 8pt 0 !important; line-height: 1.18 !important; }
+  .editor-content-area h2 { font-size: 14pt !important; margin: 22pt 0 6pt 0 !important; line-height: 1.24 !important; }
+  .editor-content-area h3 { font-size: 11pt !important; margin: 16pt 0 4pt 0 !important; }
   .editor-content-area h4,
   .editor-content-area h5,
   .editor-content-area h6 { font-size: 10pt !important; }
-  .editor-content-area p { margin: 0 0 6pt 0 !important; orphans: 3; widows: 3; }
+  .editor-content-area h1 + p,
+  .editor-content-area h1 + ul,
+  .editor-content-area h1 + ol,
+  .editor-content-area h1 + blockquote,
+  .editor-content-area h1 + pre,
+  .editor-content-area h1 + table,
+  .editor-content-area h2 + p,
+  .editor-content-area h2 + ul,
+  .editor-content-area h2 + ol,
+  .editor-content-area h2 + blockquote,
+  .editor-content-area h2 + pre,
+  .editor-content-area h2 + table,
+  .editor-content-area h3 + p,
+  .editor-content-area h3 + ul,
+  .editor-content-area h3 + ol,
+  .editor-content-area h3 + blockquote,
+  .editor-content-area h3 + pre,
+  .editor-content-area h3 + table {
+    break-before: avoid-page !important;
+    page-break-before: avoid !important;
+  }
+
+  .editor-content-area p { margin: 0 0 8pt 0 !important; orphans: 3; widows: 3; }
 
   .editor-content-area pre {
     white-space: pre-wrap !important;
-    word-wrap: break-word !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
     font-size: 8pt !important;
-    page-break-inside: avoid;
+    margin: 10pt 0 12pt 0 !important;
   }
 
   .editor-content-area table {
     font-size: 9pt !important;
-    page-break-inside: avoid;
+    table-layout: fixed !important;
   }
   .editor-content-area th { font-size: 8pt !important; }
 
-  .editor-content-area img { page-break-inside: avoid; }
+  .editor-content-area tr,
+  .editor-content-area td,
+  .editor-content-area th,
+  .editor-content-area li,
+  .editor-content-area blockquote,
+  .editor-content-area img {
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+  }
+
+  .editor-content-area thead {
+    display: table-header-group !important;
+  }
 
   /* Task list checkboxes — ensure they render in print */
   .editor-content-area ul[data-type="taskList"] li > label input[type="checkbox"] {
@@ -503,6 +552,7 @@
   }
 
   @page {
-    margin: 2cm 2.5cm;
+    size: auto;
+    margin: 16mm 18mm 18mm;
   }
 }
