@@ -70,6 +70,33 @@ ls -lh path/to/Markdown.app/Contents/MacOS/markdown-editor
 
 ---
 
+## Versioning / Release Process
+
+### Convention
+- **Semantic Versioning**: MAJOR.MINOR.PATCH (e.g., 0.2.0)
+- **Codenames**: Each release has a writing-themed codename (e.g., "Quill", "Genesis")
+
+### Source of truth
+- `src/version.ts` — Frontend version, codename, release date, changelog data
+- These 3 config files must match the version number:
+  - `package.json` (`"version"` field)
+  - `src-tauri/Cargo.toml` (`version` field)
+  - `src-tauri/tauri.conf.json` (`"version"` field)
+
+### Steps to release a new version
+1. Update `APP_VERSION`, `APP_CODENAME`, `APP_RELEASE_DATE` in `src/version.ts`
+2. Add a new entry to the `CHANGELOG` array in `src/version.ts`
+3. Update version in `package.json`, `Cargo.toml`, `tauri.conf.json`
+4. Update `CHANGELOG.md` with the same content
+5. Commit: `git commit -m "release: vX.Y.Z Codename"`
+6. Tag: `git tag -a vX.Y.Z -m "Release X.Y.Z Codename"`
+7. Build the app (follow the build process above)
+8. Push: `git push origin main --tags`
+9. Create GitHub release: `gh release create vX.Y.Z --title "vX.Y.Z Codename" --notes-file CHANGELOG.md`
+10. Optionally attach DMG: `gh release upload vX.Y.Z path/to/Markdown.dmg`
+
+---
+
 ## Architecture
 
 - **Framework**: Tauri v2 (Rust backend + React frontend)
@@ -80,6 +107,7 @@ ls -lh path/to/Markdown.app/Contents/MacOS/markdown-editor
 - **Print/PDF**: Use `window.print()` with `@media print` CSS
 
 ## File Structure
+- `src/version.ts` — App version, codename, changelog (frontend source of truth)
 - `src/styles/tokens.css` — Design system tokens
 - `src/styles/globals.css` — Base styles
 - `src/components/Editor/editor.css` — Editor content styling

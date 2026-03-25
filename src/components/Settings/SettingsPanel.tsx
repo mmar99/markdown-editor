@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useAppState, useAppDispatch } from "../../stores/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 import { HugeiconsIcon, Cancel01Icon } from "../Icons";
+import { APP_VERSION, APP_CODENAME, APP_RELEASE_DATE, CHANGELOG } from "../../version";
 
 const FONT_OPTIONS = [
   { value: "system", label: "System Default" },
@@ -138,6 +140,8 @@ export function SettingsPanel() {
             ))}
           </div>
         </Group>
+
+        <AboutSection />
       </div>
     </div>
   );
@@ -180,6 +184,76 @@ function Chip({ children, active, onClick }: { children: React.ReactNode; active
     >
       {children}
     </button>
+  );
+}
+
+function AboutSection() {
+  const [showChangelog, setShowChangelog] = useState(false);
+  const current = CHANGELOG[0];
+
+  const formattedDate = new Date(APP_RELEASE_DATE + "T00:00:00").toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  return (
+    <div style={{ borderTop: "1px solid var(--color-border-primary)", paddingTop: "var(--spacing-md)", marginTop: "var(--spacing-sm)" }}>
+      <div style={{ fontSize: "var(--font-size-small)", fontWeight: "var(--font-weight-semibold)" as unknown as number, color: "var(--color-text-primary)" }}>
+        Markdown
+      </div>
+      <div style={{ fontSize: "var(--font-size-micro)", color: "var(--color-text-tertiary)", marginTop: "2px" }}>
+        Version {APP_VERSION} "{APP_CODENAME}"
+      </div>
+      <div style={{ fontSize: "var(--font-size-micro)", color: "var(--color-text-quaternary)", marginTop: "2px" }}>
+        {formattedDate}
+      </div>
+
+      <button
+        onClick={() => setShowChangelog(!showChangelog)}
+        style={{
+          background: "none",
+          border: "none",
+          padding: 0,
+          marginTop: "var(--spacing-sm)",
+          fontSize: "var(--font-size-micro)",
+          color: "var(--color-brand)",
+          cursor: "pointer",
+          fontWeight: "var(--font-weight-medium)" as unknown as number,
+        }}
+      >
+        {showChangelog ? "Hide" : "What's new"}
+      </button>
+
+      {showChangelog && current && (
+        <div style={{ marginTop: "var(--spacing-sm)", fontSize: "var(--font-size-micro)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+          {current.changes.added && current.changes.added.length > 0 && (
+            <div style={{ marginBottom: "var(--spacing-xs)" }}>
+              <div style={{ fontWeight: "var(--font-weight-semibold)" as unknown as number, color: "var(--color-text-tertiary)", marginBottom: "2px" }}>Added</div>
+              {current.changes.added.map((item, i) => (
+                <div key={i} style={{ paddingLeft: "var(--spacing-sm)" }}>- {item}</div>
+              ))}
+            </div>
+          )}
+          {current.changes.changed && current.changes.changed.length > 0 && (
+            <div style={{ marginBottom: "var(--spacing-xs)" }}>
+              <div style={{ fontWeight: "var(--font-weight-semibold)" as unknown as number, color: "var(--color-text-tertiary)", marginBottom: "2px" }}>Changed</div>
+              {current.changes.changed.map((item, i) => (
+                <div key={i} style={{ paddingLeft: "var(--spacing-sm)" }}>- {item}</div>
+              ))}
+            </div>
+          )}
+          {current.changes.fixed && current.changes.fixed.length > 0 && (
+            <div>
+              <div style={{ fontWeight: "var(--font-weight-semibold)" as unknown as number, color: "var(--color-text-tertiary)", marginBottom: "2px" }}>Fixed</div>
+              {current.changes.fixed.map((item, i) => (
+                <div key={i} style={{ paddingLeft: "var(--spacing-sm)" }}>- {item}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
