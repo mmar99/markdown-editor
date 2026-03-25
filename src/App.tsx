@@ -418,7 +418,7 @@ function App() {
       }
       case "w": { e.preventDefault(); if (state.activeTabIndex >= 0) dispatch({ type: "CLOSE_TAB", index: state.activeTabIndex }); break; }
       case "n":
-      case "t": { e.preventDefault(); dispatch({ type: "NEW_FILE" }); editor?.commands.setContent("", { contentType: "markdown" }); hasContent = true; break; }
+      case "t": { e.preventDefault(); dispatch({ type: "NEW_FILE" }); editor?.commands.setContent("", { contentType: "markdown" }); hasContent = true; dispatch({ type: "OPEN_COMMAND_PALETTE" }); break; }
       case "r": { e.preventDefault(); refreshFile(); if (state.workspacePath) refreshTree(state.workspacePath); break; }
       case "p": { e.preventDefault(); handlePrint(); break; }
       case "\\": { e.preventDefault(); dispatch({ type: "TOGGLE_SIDEBAR" }); break; }
