@@ -57,6 +57,15 @@ select:focus-visible {
   outline-offset: 2px;
 }
 
+/* Tab bar — hide scrollbar */
+.tab-scroll-container {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.tab-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
 /* Kill focus rings on everything else (editor, wrappers, inputs styled manually) */
 div:focus-visible,
 input:focus-visible,

@@ -1,4 +1,4 @@
-export const APP_VERSION = "0.2.0";
+export const APP_VERSION = "0.2.1";
 export const APP_CODENAME = "Quill";
 export const APP_RELEASE_DATE = "2026-03-25";
 
@@ -14,6 +14,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.2.1",
+    codename: "Quill",
+    date: "2026-03-25",
+    changes: {
+      changed: [
+        "Tabs use equal-width sizing with hidden scrollbar and trackpad scroll",
+      ],
+    },
+  },
   {
     version: "0.2.0",
     codename: "Quill",
